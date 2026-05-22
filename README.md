@@ -20,58 +20,55 @@ Dev-Flow automatically infers your intent from the description and selects the a
 
 ## Installation
 
-### Option 1: Local Marketplace (Recommended)
+### Option 1: From GitHub Marketplace (Recommended)
 
-```bash
-# 1. Create directory and copy files
-mkdir -p ~/.claude/local-marketplace
-cp -r .claude-plugin marketplace.json dev-flow ~/.claude/local-marketplace/
-
-# 2. Register marketplace in ~/.claude/plugins/known_marketplaces.json
-# Add this entry (replace <username> with your actual username):
-```
-
-```json
-"dev-flow-marketplace": {
-  "source": {
-    "source": "directory",
-    "path": "/Users/<username>/.claude/local-marketplace"
-  },
-  "installLocation": "/Users/<username>/.claude/local-marketplace",
-  "lastUpdated": "2026-05-22T00:00:00.000Z"
-}
-```
-
-```bash
-# 3. Restart Claude Code, then install:
-/install-plugin dev-flow
-
-# 4. Verify (restart session first):
-/dev-flow test it out
-```
-
-### Option 2: Direct Path
-
-```
-/install-plugin /path/to/dev-flow
-```
-
-### Option 3: From GitHub
-
-After pushing to GitHub, add to `known_marketplaces.json`:
+**Step 1:** Register the marketplace in `~/.claude/plugins/known_marketplaces.json`:
 
 ```json
 "dev-flow-marketplace": {
   "source": {
     "source": "github",
-    "repo": "<your-github-username>/dev-flow-plugin"
+    "repo": "helloWorldTT-user/dev-flow-plugin"
   },
   "installLocation": "~/.claude/plugins/marketplaces/dev-flow-marketplace",
   "lastUpdated": "2026-05-22T00:00:00.000Z"
 }
 ```
 
-Then restart Claude Code and run `/install-plugin dev-flow`.
+**Step 2:** Register the plugin in `~/.claude/plugins/installed_plugins.json`, add inside `"plugins": {`:
+
+```json
+"dev-flow@dev-flow-marketplace": [
+  {
+    "scope": "user",
+    "installPath": "~/.claude/plugins/marketplaces/dev-flow-marketplace/dev-flow",
+    "version": "1.0.0",
+    "installedAt": "2026-05-22T00:00:00.000Z",
+    "lastUpdated": "2026-05-22T00:00:00.000Z"
+  }
+]
+```
+
+**Step 3:** Restart Claude Code, then verify:
+
+```
+/dev-flow test it out
+```
+
+### Option 2: Local Directory Install
+
+```bash
+# 1. Copy files
+mkdir -p ~/.claude/local-marketplace
+git clone https://github.com/helloWorldTT-user/dev-flow-plugin.git /tmp/dev-flow-plugin
+cp -r /tmp/dev-flow-plugin/.claude-plugin /tmp/dev-flow-plugin/marketplace.json /tmp/dev-flow-plugin/dev-flow ~/.claude/local-marketplace/
+
+# 2. Add to known_marketplaces.json
+# 3. Add to installed_plugins.json (set installPath to local-marketplace/dev-flow)
+# 4. Restart Claude Code
+```
+
+See [安装指南.md](./安装指南.md) for detailed step-by-step instructions.
 
 ## Usage
 
@@ -106,11 +103,10 @@ dev-flow-plugin/
 
 ## Uninstall
 
-```
-/uninstall-plugin dev-flow
-```
-
-Then remove the `dev-flow-marketplace` entry from `known_marketplaces.json`.
+1. Remove `dev-flow@dev-flow-marketplace` from `installed_plugins.json`
+2. Remove `dev-flow-marketplace` from `known_marketplaces.json`
+3. Delete the local files
+4. Restart Claude Code
 
 ## License
 
