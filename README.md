@@ -1,71 +1,70 @@
 # Dev-Flow Plugin for Claude Code
 
-A structured development workflow orchestrator that combines **OpenSpec + Superpowers + Code-Review** into a step-by-step guided process.
+OpenSpec + Superpowers + Code-Review 联合开发流程编排器，提供结构化的分步开发工作流。
 
-## Features
+## 功能特点
 
-- **Full Mode (13 steps)** — New feature development with complete lifecycle
-- **Debug Mode (8 steps)** — Bug investigation and fix workflow
-- **Quick Mode (6 steps)** — Small features and minor changes
+- **完整模式（13 步）** — 新功能开发，覆盖全生命周期
+- **排查模式（8 步）** — Bug 调查与修复
+- **快速模式（6 步）** — 小功能和改动
 
-Dev-Flow automatically infers your intent from the description and selects the appropriate workflow mode.
+Dev-Flow 会自动推理用户意图，选择合适的工作流模式。
 
-## Prerequisites
+## 前置条件
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) v1.0+
-- Recommended dependency plugins:
-  - `openspec` — for structured change management
-  - `superpowers` — for TDD, debugging, and execution workflows
-  - `code-review` — for multi-dimensional code review
+- 已安装 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)（v1.0+）
+- 推荐安装的依赖插件：
+  - `openspec` — 结构化变更管理
+  - `superpowers` — TDD、调试、执行工作流
+  - `code-review` — 多维度代码审查
 
-## Installation
+## 安装
 
 ```bash
-# 1. Add this repo as a marketplace
+# 1. 添加 marketplace
 claude plugins marketplace add https://github.com/helloWorldTT-user/dev-flow-plugin
 
-# 2. Install the plugin
+# 2. 安装插件
 claude plugins install dev-flow
 
-# 3. Reload plugins in Claude Code (or restart session)
+# 3. 在 Claude Code 中重载插件
 /reload-plugins
 ```
 
-## Usage
+## 使用
 
 ```
-/dev-flow add a favorites feature to the video platform
-/dev-flow investigate the login page white screen issue
-/dev-flow add a dark mode toggle to settings
+/dev-flow 给视频平台加个收藏夹功能
+/dev-flow 帮我排查登录白屏的问题
+/dev-flow 给设置页加个深色模式开关
 ```
 
-Dev-Flow will automatically:
-1. Infer your intent (new feature / bug fix / small change)
-2. Select the appropriate workflow mode
-3. Guide you through each step with confirmation prompts
+Dev-Flow 会自动：
+1. 推理意图（新功能 / Bug 修复 / 小改动）
+2. 选择对应的工作流模式
+3. 逐步引导，每步等待确认
 
-## Uninstall
+## 卸载
 
 ```bash
 claude plugins uninstall dev-flow
 claude plugins marketplace remove dev-flow-marketplace
 ```
 
-## Project Structure
+## 项目结构
 
 ```
 dev-flow-plugin/
 ├── .claude-plugin/
-│   └── marketplace.json          # Marketplace index
+│   └── marketplace.json          # Marketplace 索引
 ├── dev-flow/
 │   ├── .claude-plugin/
-│   │   └── plugin.json           # Plugin metadata
+│   │   └── plugin.json           # 插件元数据
 │   ├── agents/
-│   │   └── dev-flow-driver.md    # Agent definition
+│   │   └── dev-flow-driver.md    # Agent 定义
 │   └── commands/
-│       └── dev-flow.md           # /dev-flow command
-├── README.md
-└── 安装指南.md                    # Chinese installation guide
+│       └── dev-flow.md           # /dev-flow 命令
+└── README.md
 ```
 
 ## License
