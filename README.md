@@ -20,55 +20,16 @@ Dev-Flow automatically infers your intent from the description and selects the a
 
 ## Installation
 
-### Option 1: From GitHub Marketplace (Recommended)
-
-**Step 1:** Register the marketplace in `~/.claude/plugins/known_marketplaces.json`:
-
-```json
-"dev-flow-marketplace": {
-  "source": {
-    "source": "github",
-    "repo": "helloWorldTT-user/dev-flow-plugin"
-  },
-  "installLocation": "~/.claude/plugins/marketplaces/dev-flow-marketplace",
-  "lastUpdated": "2026-05-22T00:00:00.000Z"
-}
-```
-
-**Step 2:** Register the plugin in `~/.claude/plugins/installed_plugins.json`, add inside `"plugins": {`:
-
-```json
-"dev-flow@dev-flow-marketplace": [
-  {
-    "scope": "user",
-    "installPath": "~/.claude/plugins/marketplaces/dev-flow-marketplace/dev-flow",
-    "version": "1.0.0",
-    "installedAt": "2026-05-22T00:00:00.000Z",
-    "lastUpdated": "2026-05-22T00:00:00.000Z"
-  }
-]
-```
-
-**Step 3:** Restart Claude Code, then verify:
-
-```
-/dev-flow test it out
-```
-
-### Option 2: Local Directory Install
-
 ```bash
-# 1. Copy files
-mkdir -p ~/.claude/local-marketplace
-git clone https://github.com/helloWorldTT-user/dev-flow-plugin.git /tmp/dev-flow-plugin
-cp -r /tmp/dev-flow-plugin/.claude-plugin /tmp/dev-flow-plugin/marketplace.json /tmp/dev-flow-plugin/dev-flow ~/.claude/local-marketplace/
+# 1. Add this repo as a marketplace
+claude plugins marketplace add https://github.com/helloWorldTT-user/dev-flow-plugin
 
-# 2. Add to known_marketplaces.json
-# 3. Add to installed_plugins.json (set installPath to local-marketplace/dev-flow)
-# 4. Restart Claude Code
+# 2. Install the plugin
+claude plugins install dev-flow
+
+# 3. Reload plugins in Claude Code (or restart session)
+/reload-plugins
 ```
-
-See [安装指南.md](./安装指南.md) for detailed step-by-step instructions.
 
 ## Usage
 
@@ -83,13 +44,19 @@ Dev-Flow will automatically:
 2. Select the appropriate workflow mode
 3. Guide you through each step with confirmation prompts
 
+## Uninstall
+
+```bash
+claude plugins uninstall dev-flow
+claude plugins marketplace remove dev-flow-marketplace
+```
+
 ## Project Structure
 
 ```
 dev-flow-plugin/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace index
-├── marketplace.json              # Compatibility index
 ├── dev-flow/
 │   ├── .claude-plugin/
 │   │   └── plugin.json           # Plugin metadata
@@ -97,16 +64,9 @@ dev-flow-plugin/
 │   │   └── dev-flow-driver.md    # Agent definition
 │   └── commands/
 │       └── dev-flow.md           # /dev-flow command
-├── README.md                     # This file
+├── README.md
 └── 安装指南.md                    # Chinese installation guide
 ```
-
-## Uninstall
-
-1. Remove `dev-flow@dev-flow-marketplace` from `installed_plugins.json`
-2. Remove `dev-flow-marketplace` from `known_marketplaces.json`
-3. Delete the local files
-4. Restart Claude Code
 
 ## License
 
