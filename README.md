@@ -66,6 +66,41 @@ Phase 4: CLOSE（收尾）
   最终验证 → 一致性验证 → 分支收尾 → 归档 → Gate 4
 ```
 
+## 依赖 Skill 命令
+
+Dev-Flow 在各 Phase 中按需调用以下外部命令：
+
+### OpenSpec（变更管理）
+
+| 命令 | Phase | 用途 |
+|------|-------|------|
+| `/opsx:explore` | Phase 1 | 探索需求方向和代码库现状 |
+| `/opsx:new <名称>` | Phase 1 | 创建变更目录 |
+| `/opsx:ff` | Phase 2 | 一键生成 proposal/specs/design/tasks |
+| `/opsx:verify` | Phase 4 | 验证产物与实现的一致性 |
+| `/opsx:archive` | Phase 4 | 归档变更，合并 delta |
+
+### Superpowers（执行方法论）
+
+| 命令 | Phase | 用途 |
+|------|-------|------|
+| `/superpowers:brainstorm` | Phase 1 / Phase 2 | 需求澄清或技术方案探索 |
+| `/superpowers:writing-plans` | Phase 2 | 制定详细实现计划 |
+| `/superpowers:execute-plan` | Phase 3 | 按计划实现代码 |
+| `/superpowers:test-driven-development` | Phase 3 | Red → Green → Refactor |
+| `/superpowers:systematic-debugging` | Phase 3 | 系统化调试 |
+| `/superpowers:verification-before-completion` | Phase 4 | 全面验证（测试/构建/覆盖率） |
+| `/superpowers:finishing-a-development-branch` | Phase 4 | 合并/PR/清理 |
+
+### 独立审查（内置机制）
+
+| 审查类型 | Phase | 维度 |
+|----------|-------|------|
+| 设计独立审查 | Phase 2 | 完整性 / 一致性 / 风险 |
+| 代码独立审查 | Phase 3 | 正确性 / 安全性 / 规范 |
+
+> 审查采用并行 Agent + 置信度评分（≥ 80 分报告）+ 假阳性过滤机制。
+
 ## 项目结构
 
 ```
