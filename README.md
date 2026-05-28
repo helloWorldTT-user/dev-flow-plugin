@@ -1,14 +1,17 @@
 # Dev-Flow Plugin for Claude Code
 
-OpenSpec + Superpowers + Code-Review 联合开发流程编排器，提供结构化的分步开发工作流。
+Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Review + Feature-Dev 四个工具的优点。
 
 ## 功能特点
 
-- **完整模式（13 步）** — 新功能开发，覆盖全生命周期
-- **排查模式（8 步）** — Bug 调查与修复
-- **快速模式（6 步）** — 小功能和改动
+- **Phase-Gate 架构** — 5 个 Phase（INTAKE → UNDERSTAND → DESIGN → IMPLEMENT → CLOSE），每个 Phase 有独立的质量门控
+- **动态 Action 组装** — 根据需求复杂度和意图自动组装 Action 清单，不固定步骤
+- **双重独立审查** — 设计审查（实现前）+ 代码审查（实现后），多维度并行 + 置信度过滤
+- **自适应需求澄清** — 简单需求快速确认，复杂需求升级到 Brainstorm
+- **自动确认模式** — 用户可在任意 Gate 选择"后续自动确认"，编排器自动执行
+- **特殊路径支持** — Bug 排查（偏重探索+调试）、恢复工作（从断点继续）
 
-Dev-Flow 会自动推理用户意图，选择合适的工作流模式。
+Dev-Flow 会自动推理用户意图、评估复杂度，动态组装最合适的流程。
 
 ## 前置条件
 
@@ -40,15 +43,27 @@ claude plugins install dev-flow
 ```
 
 Dev-Flow 会自动：
-1. 推理意图（新功能 / Bug 修复 / 小改动）
-2. 选择对应的工作流模式
-3. 逐步引导，每步等待确认
+1. 推理意图和复杂度
+2. 动态组装 Action 清单
+3. 逐 Phase 执行，每 Phase 在 Gate 等待确认
 
-## 卸载
+## 流程架构
 
-```bash
-claude plugins uninstall dev-flow
-claude plugins marketplace remove dev-flow-marketplace
+```
+Phase 0: INTAKE（接收）
+  意图推理 → 复杂度评估 → Action 组装 → Gate 0 用户确认
+
+Phase 1: UNDERSTAND（理解）
+  代码探索 → 需求澄清 → OpenSpec 变更 → Gate 1
+
+Phase 2: DESIGN（设计）
+  产物生成 → 技术方案 → 执行计划 → 设计独立审查 → Gate 2
+
+Phase 3: IMPLEMENT（实现）
+  代码实现 → TDD → 调试 → 代码独立审查 → Gate 3
+
+Phase 4: CLOSE（收尾）
+  最终验证 → 一致性验证 → 分支收尾 → 归档 → Gate 4
 ```
 
 ## 项目结构
@@ -56,15 +71,27 @@ claude plugins marketplace remove dev-flow-marketplace
 ```
 dev-flow-plugin/
 ├── .claude-plugin/
-│   └── marketplace.json          # Marketplace 索引
+│   └── marketplace.json
 ├── dev-flow/
 │   ├── .claude-plugin/
-│   │   └── plugin.json           # 插件元数据
+│   │   └── plugin.json
 │   ├── agents/
-│   │   └── dev-flow-driver.md    # Agent 定义
+│   │   └── dev-flow-driver.md
 │   └── commands/
-│       └── dev-flow.md           # /dev-flow 命令
+│       └── dev-flow.md
+├── docs/superpowers/
+│   ├── specs/
+│   │   └── 2026-05-28-dev-flow-v2-design.md
+│   └── plans/
+│       └── 2026-05-28-dev-flow-v2.md
 └── README.md
+```
+
+## 卸载
+
+```bash
+claude plugins uninstall dev-flow
+claude plugins marketplace remove dev-flow-marketplace
 ```
 
 ## License
