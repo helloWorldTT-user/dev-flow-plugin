@@ -1,6 +1,6 @@
 {
   "name": "dev-flow",
   "description": "Phase-Gate 动态开发流程编排器，5 Phase + 独立审查 + 自适应需求澄清 + 自动确认模式",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": { "name": "wuweihao" }
 }
