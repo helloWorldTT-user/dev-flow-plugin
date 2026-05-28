@@ -61,7 +61,7 @@ Phase 4: CLOSE（收尾）
 
 **意图分类规则：**
 - 包含"bug"/"问题"/"报错"/"排查"/"白屏"/"崩溃"等 → Bug 排查
-- 包含"继续"/"上次"/"接着" → 恢复未完成工作
+- 包含"继续"/"上次"/"接着"/"恢复" → 恢复未完成工作
 - 包含"加个"/"做个"/"实现"/"开发"/"新功能" → 新功能开发
 - 其他小改动 → 小功能
 
@@ -85,9 +85,70 @@ Phase 4: CLOSE（收尾）
 ### 特殊路径：恢复未完成工作
 
 当意图推理为"恢复工作"时：
-- 扫描 `openspec/changes/` 找到未归档的变更
-- 读取变更的 tasks.md 确定上次进度
-- 从上次中断的 Phase 继续，跳过已完成的 Action
+- 扫描 `.dev-flow/` 目录，列出所有包含 `state.json` 的子目录
+- 展示选择列表，用户选择要恢复的变更
+- 读取 `state.json`，恢复 Phase 0 的推理结果和 Action 清单
+- 从 `current_phase` + `current_action` 继续，跳过已 completed 的 Action
+- 不依赖 `openspec/changes/`，以 `.dev-flow/` 为唯一真相源
+- 如果 OpenSpec 可用且变更目录存在，可交叉验证一致性
+
+### 状态持久化
+
+**目的：** 流程可能持续数十分钟甚至数小时，关机重启后需要在新会话中恢复进度，不需要全量读取上下文。
+
+**状态文件：** 目标项目根目录 `.dev-flow/<change-name>/state.json`
+
+**为什么用 JSON 不用 Markdown：** Agent 是 LLM，JSON 结构化无歧义，读写确定性高。Markdown 格式在不同会话间容易漂移。
+
+**为什么按变更名建子目录：** 支持多个变更并行追踪，每个变更独立状态文件。
+
+**结构：**
+
+```json
+{
+  "version": 1,
+  "flow_id": "add-video-playlist",
+  "created_at": "2026-05-28T14:30:00",
+  "updated_at": "2026-05-28T15:45:00",
+  "request": "给视频平台加个收藏夹功能",
+  "intent": "新功能开发",
+  "complexity": "高",
+  "clarity": "不明确",
+  "auto_confirm": false,
+  "openspec_initialized": true,
+  "test_framework_detected": true,
+  "current_phase": 2,
+  "current_action": "2.3",
+  "phases": {
+    "0": { "status": "completed", "actions": { "0.1": "completed", "0.2": "completed", "0.3": "completed" } },
+    "1": { "status": "completed", "actions": { "1.1": "completed", "1.2": "completed", "1.3": "completed" } },
+    "2": { "status": "in_progress", "actions": { "2.1": "completed", "2.2": "completed", "2.3": "in_progress", "2.4": "pending" } },
+    "3": { "status": "pending", "actions": { "3.1": "pending", "3.2": "pending", "3.3": "pending", "3.4": "pending" } },
+    "4": { "status": "pending", "actions": { "4.1": "pending", "4.2": "pending", "4.3": "pending", "4.4": "pending" } }
+  },
+  "artifacts": {
+    "design_doc": "docs/superpowers/specs/2026-05-28-video-playlist-design.md",
+    "plan_doc": null,
+    "openspec_change_dir": "openspec/changes/add-video-playlist/"
+  },
+  "key_decisions": [
+    "技术方案选用 fetch+ReadableStream MVP",
+    "重试策略用指数退避"
+  ]
+}
+```
+
+**写入时机：**
+
+| 触发点 | 操作 |
+|--------|------|
+| Gate 0 确认后 | 创建初始 state.json |
+| 每个 Action 完成后 | 更新 current_action 和 action status |
+| 每个 Phase Gate 确认后 | 更新 current_phase 和 phase status |
+| 用户说"暂停" | 立即写入当前进度 |
+| 切换自动确认模式 | 更新 auto_confirm |
+| 记录关键决策时 | 追加 key_decisions |
+| Phase 4 归档完成 | 删除 state.json（或移动到 .dev-flow/archive/） |
 
 #### Phase 1: UNDERSTAND
 
@@ -281,6 +342,9 @@ Phase 4: CLOSE（收尾）
 6. Git 提交 + PR
 7. OpenSpec 归档: `openspec/archive/`
 
+**流程状态（不提交到 git，建议加入 .gitignore）：**
+1. 状态文件: `.dev-flow/<change-name>/state.json`（流程进行中存在，归档后删除）
+
 **临时（仅在对话上下文中）：**
 1. Action 组装报告
 2. 代码探索报告
@@ -295,6 +359,8 @@ Phase 4: CLOSE（收尾）
 - OpenSpec 未初始化 → 跳过所有 OpenSpec 相关 Action，不影响流程
 - 执行失败 → 展示错误，问用户：重试/跳过/中止
 - 审查 Agent 不可用 → 降级为编排器自审（无置信度过滤），告知用户
+- state.json 损坏或不存在（恢复时）→ 告知用户无法恢复，建议重新开始
+- `.dev-flow/` 不存在（恢复时）→ 告知用户没有未完成的流程
 
 ## 与 v1.0 的兼容性
 

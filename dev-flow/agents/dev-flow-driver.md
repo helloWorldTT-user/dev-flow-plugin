@@ -165,9 +165,57 @@ Phase 4 (CLOSE):
 - 整体偏重 Phase 1（探索定位）和 Phase 3（修复+验证）
 
 **特殊路径 — 恢复未完成工作：**
-- 扫描 `openspec/changes/` 找到未归档的变更
-- 读取 tasks.md 确定上次进度
-- 从上次中断的 Phase 继续，跳过已完成的 Action
+- 扫描项目根目录 `.dev-flow/` 下所有子目录中的 `state.json`
+- 如果只有一个未完成变更 → 直接恢复
+- 如果有多个 → 展示列表让用户选择
+- 读取 state.json 恢复 Phase 0 推理结果和 Action 清单
+- 从 current_phase + current_action 继续，跳过已 completed 的 Action
+- 展示恢复摘要，用户确认后继续
+
+**状态持久化机制：**
+
+流程状态保存在项目根目录 `.dev-flow/<change-name>/state.json`。
+
+**state.json 结构：**
+```json
+{
+  "version": 1,
+  "flow_id": "add-video-playlist",
+  "created_at": "2026-05-28T14:30:00",
+  "updated_at": "2026-05-28T15:45:00",
+  "request": "用户原始请求文本",
+  "intent": "新功能开发",
+  "complexity": "高",
+  "clarity": "不明确",
+  "auto_confirm": false,
+  "openspec_initialized": true,
+  "test_framework_detected": true,
+  "current_phase": 2,
+  "current_action": "2.3",
+  "phases": {
+    "0": { "status": "completed", "actions": { "0.1": "completed", "0.2": "completed", "0.3": "completed" } },
+    "1": { "status": "completed", "actions": { "1.1": "completed", "1.2": "completed", "1.3": "completed" } },
+    "2": { "status": "in_progress", "actions": { "2.1": "completed", "2.2": "completed", "2.3": "in_progress", "2.4": "pending" } },
+    "3": { "status": "pending", "actions": { "3.1": "pending", "3.2": "pending", "3.3": "pending", "3.4": "pending" } },
+    "4": { "status": "pending", "actions": { "4.1": "pending", "4.2": "pending", "4.3": "pending", "4.4": "pending" } }
+  },
+  "artifacts": {
+    "design_doc": "docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md",
+    "plan_doc": null,
+    "openspec_change_dir": "openspec/changes/<name>/"
+  },
+  "key_decisions": []
+}
+```
+
+**写入时机（必须严格遵守）：**
+- Gate 0 确认后 → 创建 `.dev-flow/<change-name>/state.json`（初始状态）
+- 每个 Action 完成后 → 更新 current_action 和 action status
+- 每个 Phase Gate 确认后 → 更新 current_phase 和 phase status
+- 用户说"暂停" → 立即写入当前进度到 state.json
+- 切换自动确认模式 → 更新 auto_confirm
+- 用户做出关键决策 → 追加 key_decisions
+- Phase 4 归档完成 → 删除 state.json（流程结束）
 
 ### Gate 0: 用户确认推理结果
 
@@ -211,7 +259,10 @@ Phase 4 (CLOSE):
   → "强制完整流程" — 所有 CONDITIONAL Action 设为 MUST
 ```
 
-**此时必须停下来等用户回复。用户确认后才创建 todo list 并开始 Phase 1。**
+**此时必须停下来等用户回复。用户确认后：**
+1. 创建 todo list
+2. **创建 `.dev-flow/<变更名称>/state.json`**（写入初始状态）
+3. 开始 Phase 1
 
 ---
 
@@ -271,9 +322,7 @@ Phase 4 (CLOSE):
   → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
 ```
 
----
-
-## Phase 2: DESIGN（设计）
+**用户确认后：更新 state.json（current_phase=2, phase 1 status=completed）**
 
 ### Action 2.1: OpenSpec 产物生成（CONDITIONAL: 使用了变更创建）
 
@@ -351,9 +400,7 @@ Phase 4 (CLOSE):
   → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
 ```
 
----
-
-## Phase 3: IMPLEMENT（实现）
+**用户确认后：更新 state.json（current_phase=3, phase 2 status=completed）**
 
 ### Action 3.1: 代码实现（MUST）
 
@@ -423,9 +470,7 @@ Phase 4 (CLOSE):
   → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
 ```
 
----
-
-## Phase 4: CLOSE（收尾）
+**用户确认后：更新 state.json（current_phase=4, phase 3 status=completed）**
 
 ### Action 4.1: 最终验证（MUST）
 
@@ -471,6 +516,8 @@ Phase 4 (CLOSE):
 🔔 流程完成。
 ```
 
+**流程完成后：删除 `.dev-flow/<变更名称>/state.json`（清理已完成的状态）**
+
 ---
 
 ## 自动确认模式
@@ -496,7 +543,7 @@ Phase 4 (CLOSE):
 - "跳到 Phase N" → 直接跳到指定 Phase
 - "跳过当前 Action" → 跳过，继续当前 Phase 下一个 Action
 - "手动模式" → 从自动模式切回手动
-- "暂停" → 记录当前进度，等待用户恢复
+- "暂停" → 立即更新 state.json，告知用户可随时用 `/dev-flow 继续` 恢复
 
 ## 错误处理
 
@@ -504,3 +551,5 @@ Phase 4 (CLOSE):
 - OpenSpec 未初始化 → 跳过所有 OpenSpec 相关 Action，不影响流程
 - 执行失败 → 展示错误，问用户：重试/跳过/中止
 - 审查 Agent 不可用 → 降级为编排器自审（无置信度过滤），告知用户
+- state.json 损坏或不存在（恢复时）→ 告知用户无法恢复，建议重新开始流程
+- `.dev-flow/` 目录不存在（恢复时）→ 告知用户没有未完成的流程

@@ -10,6 +10,7 @@ Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Re
 - **自适应需求澄清** — 简单需求快速确认，复杂需求升级到 Brainstorm
 - **自动确认模式** — 用户可在任意 Gate 选择"后续自动确认"，编排器自动执行
 - **特殊路径支持** — Bug 排查（偏重探索+调试）、恢复工作（从断点继续）
+- **中断恢复** — 流程状态自动持久化到 `.dev-flow/<变更名>/state.json`，关机重启后可从断点继续，支持多变更并行
 
 Dev-Flow 会自动推理用户意图、评估复杂度，动态组装最合适的流程。
 
@@ -40,6 +41,8 @@ claude plugins install dev-flow
 /dev-flow 给视频平台加个收藏夹功能
 /dev-flow 帮我排查登录白屏的问题
 /dev-flow 给设置页加个深色模式开关
+/dev-flow 继续上次的收藏夹功能      # 从断点恢复
+/dev-flow 恢复                      # 列出所有未完成变更
 ```
 
 Dev-Flow 会自动：
@@ -128,6 +131,16 @@ dev-flow-plugin/
 │       └── 2026-05-28-dev-flow-v2.md
 └── README.md
 ```
+
+## 中断恢复
+
+流程状态自动持久化到 `.dev-flow/<变更名>/state.json`，关机重启后可从断点继续。
+
+- 支持多个变更并行追踪（每个变更独立状态文件）
+- 恢复时列出所有未完成变更，用户显式选择要继续哪个
+- 从上次中断的 Phase + Action 继续，跳过已完成的步骤
+- 不依赖 OpenSpec，以 `.dev-flow/` 为唯一真相源
+- Phase 4 归档后自动清理状态文件
 
 ## 卸载
 

@@ -38,11 +38,12 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 
 1. **意图分类**：
    - "bug"/"问题"/"报错"/"排查"/"白屏"/"崩溃" → Bug 排查
-   - "继续"/"上次"/"接着" → 恢复未完成工作
+   - "继续"/"上次"/"接着"/"恢复" → 恢复未完成工作
    - "加个"/"做个"/"实现"/"开发"/"新功能" → 新功能开发
    - 其他 → 小功能
 
 2. **变更决策**：
+   - 恢复工作：扫描 `.dev-flow/` 目录中的 state.json，展示未完成变更让用户选择
    - 检查 `openspec/changes/` 是否有未归档的相关变更
    - 相关 → 复用；不相关 → 新建
 
@@ -104,7 +105,7 @@ Phase 4:
   → "继续" / "后续自动确认" / 调整内容 / "强制完整流程"
 ```
 
-**必须停下来等用户确认。确认后创建 TodoWrite 并开始 Phase 1。**
+**必须停下来等用户确认。确认后创建 TodoWrite、创建 `.dev-flow/<变更名称>/state.json`（初始状态）、开始 Phase 1。**
 
 ---
 
@@ -137,7 +138,7 @@ Phase 4:
   → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
 ```
 
----
+**确认后更新 state.json（current_phase=2, phase 1 status=completed）**
 
 ## Phase 2: DESIGN（设计）
 
@@ -177,7 +178,7 @@ Phase 4:
   → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
 ```
 
----
+**确认后更新 state.json（current_phase=3, phase 2 status=completed）**
 
 ## Phase 3: IMPLEMENT（实现）
 
@@ -216,7 +217,7 @@ Phase 4:
   → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
 ```
 
----
+**确认后更新 state.json（current_phase=4, phase 3 status=completed）**
 
 ## Phase 4: CLOSE（收尾）
 
@@ -241,6 +242,8 @@ Phase 4:
 ```
 📋 Phase 4 完成：[验证、一致性、分支、归档结果]
 🔔 流程完成。
+
+**完成后删除 `.dev-flow/<变更名称>/state.json`（清理已完成的状态）**
 ```
 
 ---
@@ -262,7 +265,7 @@ Phase 4:
 - "跳到 Phase N" → 直接跳转
 - "跳过当前 Action" → 跳过继续
 - "手动模式" → 切回手动
-- "暂停" → 记录进度
+- "暂停" → 立即更新 state.json，告知用户可随时用 `/dev-flow 继续` 恢复
 
 ## 错误处理
 
@@ -270,3 +273,5 @@ Phase 4:
 - OpenSpec 未初始化 → 跳过 OpenSpec Action
 - 执行失败 → 重试/跳过/中止
 - 审查 Agent 不可用 → 降级编排器自审，告知用户
+- state.json 损坏或不存在（恢复时）→ 告知用户无法恢复，建议重新开始
+- `.dev-flow/` 不存在（恢复时）→ 告知用户没有未完成的流程
