@@ -250,15 +250,25 @@ Phase 4 (CLOSE):
     [✅/⬜] OpenSpec 一致性验证
     [✅/⬜] 分支收尾
     [✅/⬜] 归档
-
-🔔 确认继续？
-  → "继续" — 进入 Phase 1
-  → "后续自动确认" — 自动模式，仅 Critical 问题中断
-  → 输入调整内容 — 修改推理结果
-  → "强制完整流程" — 所有 CONDITIONAL Action 设为 MUST
 ```
 
-**此时必须停下来等用户回复。用户确认后：**
+**必须使用 AskUserQuestion 工具提供选项式交互**（不能让用户手动输入）：
+```json
+{
+  "questions": [{
+    "question": "确认推理结果和 Action 清单，如何继续？",
+    "header": "Gate 0",
+    "multiSelect": false,
+    "options": [
+      { "label": "继续", "description": "确认推理结果，进入 Phase 1" },
+      { "label": "后续自动确认", "description": "确认后静默执行所有后续 Phase，仅 Critical 问题中断" },
+      { "label": "强制完整流程", "description": "将所有 CONDITIONAL Action 设为 MUST" }
+    ]
+  }]
+}
+```
+
+用户选择"Other"输入内容时视为调整请求。用户确认后：
 1. 创建 todo list
 2. **创建 `.dev-flow/<变更名称>/state.json`**（写入初始状态）
 3. 开始 Phase 1
@@ -279,9 +289,20 @@ Phase 4 (CLOSE):
 - 简单需求：单次 `/opsx:explore`
 
 **Gate 1a: 探索方向确认**
-```
-🔔 探索方向正确？继续？
-  → "继续" / "后续自动确认" / 调整内容
+
+探索完成后**使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "探索方向正确？",
+    "header": "Gate 1a",
+    "multiSelect": false,
+    "options": [
+      { "label": "正确，继续", "description": "确认探索方向，进入下一步" },
+      { "label": "调整方向", "description": "指定新的探索方向" }
+    ]
+  }]
+}
 ```
 
 ### Action 1.2: 需求澄清（CONDITIONAL）
@@ -298,9 +319,20 @@ Phase 4 (CLOSE):
 - 此产出同时满足需求澄清和技术方案两个目标
 
 **Gate 1b: 需求确认**
-```
-🔔 需求确认？继续？
-  → "继续" / "后续自动确认" / 调整内容
+
+需求澄清完成后**使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "需求确认？",
+    "header": "Gate 1b",
+    "multiSelect": false,
+    "options": [
+      { "label": "确认，继续", "description": "需求已明确，进入下一步" },
+      { "label": "还需要讨论", "description": "继续细化需求" }
+    ]
+  }]
+}
 ```
 
 ### Action 1.3: OpenSpec 变更创建（CONDITIONAL: OpenSpec 已初始化）
@@ -313,15 +345,23 @@ Phase 4 (CLOSE):
 
 ### Gate 1: Phase 完成确认
 
+展示 Phase 1 总结后，**必须使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "Phase 1 (UNDERSTAND) 完成，如何继续？",
+    "header": "Gate 1",
+    "multiSelect": false,
+    "options": [
+      { "label": "继续", "description": "进入 Phase 2 (DESIGN)" },
+      { "label": "后续自动确认", "description": "静默执行后续所有 Phase，仅 Critical 中断" },
+      { "label": "强制完整流程", "description": "将所有 CONDITIONAL Action 设为 MUST" }
+    ]
+  }]
+}
 ```
-📋 Phase 1 (UNDERSTAND) 完成：
-  [总结探索、澄清、变更创建的结果]
 
-🔔 进入 Phase 2 (DESIGN)？
-  → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
-```
-
-**用户确认后：更新 state.json（current_phase=2, phase 1 status=completed）**
+用户选择"Other"输入"跳到 Phase N"可直接跳转。确认后：更新 state.json（current_phase=2, phase 1 status=completed）
 
 ### Action 2.1: OpenSpec 产物生成（CONDITIONAL: 使用了变更创建）
 
@@ -381,25 +421,41 @@ Phase 4 (CLOSE):
 - Minor: 记录但不阻塞
 
 **Gate 2a: 审查结果确认**
-```
-📋 设计审查报告：
-  [3 个维度的审查结果 + 严重性分级]
 
-🔔 处理审查问题后确认设计？
-  → "继续" / "后续自动确认" / 调整内容
+设计审查完成后**使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "设计审查完成，是否有需要处理的问题？",
+    "header": "Gate 2a",
+    "multiSelect": false,
+    "options": [
+      { "label": "没有问题，继续", "description": "审查通过，进入 Phase 2 确认" },
+      { "label": "有问题需修复", "description": "修复审查发现的问题后重新确认" }
+    ]
+  }]
+}
 ```
 
 ### Gate 2: Phase 完成确认
 
+展示 Phase 2 总结后，**必须使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "Phase 2 (DESIGN) 完成，如何继续？",
+    "header": "Gate 2",
+    "multiSelect": false,
+    "options": [
+      { "label": "继续", "description": "进入 Phase 3 (IMPLEMENT)" },
+      { "label": "后续自动确认", "description": "静默执行后续所有 Phase，仅 Critical 中断" },
+      { "label": "强制完整流程", "description": "将所有 CONDITIONAL Action 设为 MUST" }
+    ]
+  }]
+}
 ```
-📋 Phase 2 (DESIGN) 完成：
-  [总结产物生成、技术方案、计划、审查结果]
 
-🔔 进入 Phase 3 (IMPLEMENT)？
-  → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
-```
-
-**用户确认后：更新 state.json（current_phase=3, phase 2 status=completed）**
+用户选择"Other"输入"跳到 Phase N"可直接跳转。确认后：更新 state.json（current_phase=3, phase 2 status=completed）
 
 ### Action 3.1: 代码实现（MUST）
 
@@ -451,25 +507,41 @@ Phase 4 (CLOSE):
 **同样的置信度评分、假阳性排除和严重性分级机制。**
 
 **Gate 3a: 审查结果确认**
-```
-📋 代码审查报告：
-  [3 个维度的审查结果 + 严重性分级]
 
-🔔 处理审查问题后确认实现？
-  → "继续" / "后续自动确认" / 调整内容
+代码审查完成后**使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "代码审查完成，是否有需要处理的问题？",
+    "header": "Gate 3a",
+    "multiSelect": false,
+    "options": [
+      { "label": "没有问题，继续", "description": "审查通过，进入 Phase 3 确认" },
+      { "label": "有问题需修复", "description": "修复审查发现的问题后重新确认" }
+    ]
+  }]
+}
 ```
 
 ### Gate 3: Phase 完成确认
 
+展示 Phase 3 总结后，**必须使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "Phase 3 (IMPLEMENT) 完成，如何继续？",
+    "header": "Gate 3",
+    "multiSelect": false,
+    "options": [
+      { "label": "继续", "description": "进入 Phase 4 (CLOSE)" },
+      { "label": "后续自动确认", "description": "静默执行后续所有 Phase，仅 Critical 中断" },
+      { "label": "强制完整流程", "description": "将所有 CONDITIONAL Action 设为 MUST" }
+    ]
+  }]
+}
 ```
-📋 Phase 3 (IMPLEMENT) 完成：
-  [总结实现、TDD、调试、审查结果]
 
-🔔 进入 Phase 4 (CLOSE)？
-  → "继续" / "后续自动确认" / 调整内容 / "跳到 Phase N"
-```
-
-**用户确认后：更新 state.json（current_phase=4, phase 3 status=completed）**
+用户选择"Other"输入"跳到 Phase N"可直接跳转。确认后：更新 state.json（current_phase=4, phase 3 status=completed）
 
 ### Action 4.1: 最终验证（MUST）
 
@@ -505,17 +577,22 @@ Phase 4 (CLOSE):
 
 ### Gate 4: 流程完成确认
 
+展示 Phase 4 结果后，**必须使用 AskUserQuestion**：
+```json
+{
+  "questions": [{
+    "question": "Phase 4 (CLOSE) 完成，所有验证通过。确认收尾？",
+    "header": "Gate 4",
+    "multiSelect": false,
+    "options": [
+      { "label": "确认完成", "description": "流程结束，清理状态文件" },
+      { "label": "还有问题", "description": "需要回退或修复问题" }
+    ]
+  }]
+}
 ```
-📋 Phase 4 (CLOSE) 完成：
-  验证: ✅ 测试通过、构建成功
-  一致性: ✅ 产物与实现一致
-  分支: ✅ 已处理
-  归档: ✅ 已归档
 
-🔔 流程完成。
-```
-
-**流程完成后：删除 `.dev-flow/<变更名称>/state.json`（清理已完成的状态）**
+确认后：删除 `.dev-flow/<变更名称>/state.json`（清理已完成的状态）
 
 ---
 
