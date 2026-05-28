@@ -66,40 +66,47 @@ Phase 4: CLOSE（收尾）
   最终验证 → 一致性验证 → 分支收尾 → 归档 → Gate 4
 ```
 
-## 依赖 Skill 命令
+## 流程步骤与 Skill 命令对照
 
-Dev-Flow 在各 Phase 中按需调用以下外部命令：
+```
+Phase 0: INTAKE（接收）
+  ① 意图推理          — 编排器内置（关键词匹配 + 复杂度评估）
+  ② Action 组装        — 编排器内置（动态决定后续步骤）
+  🔔 Gate 0: 用户确认推理结果和 Action 清单
 
-### OpenSpec（变更管理）
+Phase 1: UNDERSTAND（理解）
+  ③ 代码库探索         /opsx:explore                  [CONDITIONAL: 复杂度≥中 / Bug排查时MUST]
+  ④ 需求澄清（简单）    — 编排器快速确认（2-3 个定向问题）[CONDITIONAL: 低复杂度+不明确]
+  ④ 需求澄清（复杂）    /superpowers:brainstorm         [CONDITIONAL: 中高复杂度+不明确]
+  ⑤ OpenSpec 变更创建   /opsx:new <名称>                [CONDITIONAL: OpenSpec 已初始化]
+  🔔 Gate 1: 用户确认理解正确
 
-| 命令 | Phase | 用途 |
-|------|-------|------|
-| `/opsx:explore` | Phase 1 | 探索需求方向和代码库现状 |
-| `/opsx:new <名称>` | Phase 1 | 创建变更目录 |
-| `/opsx:ff` | Phase 2 | 一键生成 proposal/specs/design/tasks |
-| `/opsx:verify` | Phase 4 | 验证产物与实现的一致性 |
-| `/opsx:archive` | Phase 4 | 归档变更，合并 delta |
+Phase 2: DESIGN（设计）
+  ⑥ OpenSpec 产物生成   /opsx:ff                        [CONDITIONAL: 使用了变更创建]
+  ⑦ 技术方案 Brainstorm /superpowers:brainstorm          [CONDITIONAL: Phase1 未用 + 复杂度≥中]
+  ⑧ 执行计划制定        /superpowers:writing-plans       [CONDITIONAL: 复杂度≥中]
+  ⑨ 设计独立审查        — 3 并行 Agent（完整性/一致性/风险）[CONDITIONAL: 复杂度≥中]
+  🔔 Gate 2a: 审查结果确认
+  🔔 Gate 2: 用户确认设计通过
 
-### Superpowers（执行方法论）
+Phase 3: IMPLEMENT（实现）
+  ⑩ 代码实现           /superpowers:execute-plan        [MUST]
+  ⑪ TDD 循环           /superpowers:test-driven-development  [CONDITIONAL: 有测试框架]
+  ⑫ 调试               /superpowers:systematic-debugging     [OPTIONAL / Bug排查时CONDITIONAL]
+  ⑬ 代码独立审查        — 3 并行 Agent（正确性/安全性/规范） [MUST]
+  🔔 Gate 3a: 审查结果确认
+  🔔 Gate 3: 用户确认实现通过
 
-| 命令 | Phase | 用途 |
-|------|-------|------|
-| `/superpowers:brainstorm` | Phase 1 / Phase 2 | 需求澄清或技术方案探索 |
-| `/superpowers:writing-plans` | Phase 2 | 制定详细实现计划 |
-| `/superpowers:execute-plan` | Phase 3 | 按计划实现代码 |
-| `/superpowers:test-driven-development` | Phase 3 | Red → Green → Refactor |
-| `/superpowers:systematic-debugging` | Phase 3 | 系统化调试 |
-| `/superpowers:verification-before-completion` | Phase 4 | 全面验证（测试/构建/覆盖率） |
-| `/superpowers:finishing-a-development-branch` | Phase 4 | 合并/PR/清理 |
+Phase 4: CLOSE（收尾）
+  ⑭ 最终验证           /superpowers:verification-before-completion  [MUST]
+  ⑮ 一致性验证         /opsx:verify                     [CONDITIONAL: 使用了 OpenSpec 产物]
+  ⑯ 分支收尾           /superpowers:finishing-a-development-branch [CONDITIONAL: 有 worktree]
+  ⑰ 归档               /opsx:archive                    [CONDITIONAL: 使用了 OpenSpec 变更]
+  🔔 Gate 4: 流程完成
+```
 
-### 独立审查（内置机制）
-
-| 审查类型 | Phase | 维度 |
-|----------|-------|------|
-| 设计独立审查 | Phase 2 | 完整性 / 一致性 / 风险 |
-| 代码独立审查 | Phase 3 | 正确性 / 安全性 / 规范 |
-
-> 审查采用并行 Agent + 置信度评分（≥ 80 分报告）+ 假阳性过滤机制。
+> 标注说明：**MUST** = 始终执行 | **CONDITIONAL** = 满足条件时执行 | **OPTIONAL** = 按需触发
+> 独立审查采用并行 Agent + 置信度评分（≥ 80 分报告）+ 假阳性过滤机制。
 
 ## 项目结构
 
