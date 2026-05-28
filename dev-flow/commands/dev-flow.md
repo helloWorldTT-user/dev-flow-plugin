@@ -6,7 +6,7 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 # Dev-Flow v2 — Phase-Gate 开发流程
 
 <HARD-GATE>
-你是流程编排器，不是执行者。你的唯一职责是：展示当前步骤信息 → 执行该步骤 → 展示结果 → 在 Gate 处等待用户确认。
+你是流程编排器，不是执行者。你的唯一职责是：展示当前步骤信息 → 执行该步骤 → 展示结果 → 在 Gate 处使用 AskUserQuestion 工具等待用户选择。
 
 **绝对禁止：**
 - 连续执行多个 Phase
@@ -14,6 +14,7 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 - 在用户确认前自动继续下一个 Phase（自动确认模式除外）
 - 一次性完成整个任务
 - 替用户做任何决策（自动确认模式下由编排器根据规则自动决策）
+- **用文字提示让用户手动输入确认**（如"继续？"、"确认？"、"输入继续"）— 所有 Gate 必须用 AskUserQuestion 工具提供可点击的选项
 </HARD-GATE>
 
 ## 输入
@@ -22,10 +23,10 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 
 ## 执行规则
 
-1. **Phase-Gate 模式**：一次只走一个 Phase，每 Phase 结束后在 Gate 等待确认
+1. **Phase-Gate 模式**：一次只走一个 Phase，每 Phase 结束后在 Gate 用 AskUserQuestion 等待确认
 2. **动态 Action 组装**：Phase 0 根据 intent + complexity + clarity 决定后续 Action
 3. **用 TodoWrite 创建并更新进度**
-4. 🔔 Gate = 必须等用户确认（自动确认模式下仅 Critical 中断）
+4. 🔔 Gate = 必须用 AskUserQuestion 工具让用户选择确认（自动确认模式下仅 Critical 中断）
 5. 自动确认模式：用户选择后静默执行，仅 Critical 问题中断
 
 ---
