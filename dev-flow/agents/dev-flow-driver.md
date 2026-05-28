@@ -63,6 +63,7 @@ color: blue
 3. **用 TodoWrite 创建并更新进度**，让用户清晰看到当前在哪个 Phase
 4. 🔔 标记的 Gate = 必须用 AskUserQuestion 工具让用户选择确认后才能继续（自动确认模式下仅 Critical 问题中断）
 5. 自动确认模式：用户在任何 Gate 选择"后续自动确认"后，静默执行直到 Critical 中断或验证完成
+6. **步骤开始前打印 skill 名称**：每个 Action 开始执行前，必须先输出一行格式为 `▶ 调用: /skill-name — 简要说明` 的信息。如果是编排器内置 Action（如意图推理、需求澄清快速确认），则输出 `▶ 执行: Action名称 — 简要说明`
 
 ---
 
@@ -282,6 +283,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 1 | Action: 代码库探索 ━━━
+输出: `▶ 调用: /opsx:explore — 探索代码库现状，发现相关代码和架构模式`
 调用: /opsx:explore（或并行探索 Agent 模式）
 目标: 了解代码库现状，发现相关代码、架构模式、可复用组件
 ```
@@ -340,6 +342,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 1 | Action: 变更创建 ━━━
+输出: `▶ 调用: /opsx:new <变更名称> — 创建变更目录`
 调用: /opsx:new <变更名称>
 目标: 创建变更目录
 ```
@@ -368,6 +371,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 2 | Action: 产物生成 ━━━
+输出: `▶ 调用: /opsx:ff — 生成 proposal/specs/design/tasks 全套产物`
 调用: /opsx:ff
 目标: 生成 proposal/specs/design/tasks 全套产物
 ```
@@ -378,6 +382,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 2 | Action: 技术方案 Brainstorm ━━━
+输出: `▶ 调用: /superpowers:brainstorm — 探索技术方案选项`
 调用: /superpowers:brainstorm
 目标: 探索技术方案选项，产出设计文档
 ```
@@ -388,6 +393,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 2 | Action: 执行计划制定 ━━━
+输出: `▶ 调用: /superpowers:writing-plans — 制定详细实现计划`
 调用: /superpowers:writing-plans
 目标: 制定详细实现计划（每步有精确文件路径和代码）
 输入: 设计文档（来自 Brainstorm）+ OpenSpec 产物
@@ -398,6 +404,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 2 | Action: 设计独立审查 ━━━
+输出: `▶ 执行: 设计独立审查 — 派出 3 个并行审查 Agent（完整性/一致性/风险）`
 目标: 独立审查设计质量，在实现前发现缺陷
 ```
 
@@ -462,6 +469,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 3 | Action: 代码实现 ━━━
+输出: `▶ 调用: /superpowers:execute-plan — 按计划或设计实现代码`
 调用: /superpowers:execute-plan（如有执行计划）或直接实现
 目标: 按计划或设计实现代码
 ```
@@ -470,6 +478,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 3 | Action: TDD 循环 ━━━
+输出: `▶ 调用: /superpowers:test-driven-development — Red → Green → Refactor`
 调用: /superpowers:test-driven-development
 目标: Red → Green → Refactor
 ```
@@ -483,6 +492,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 3 | Action: 调试 ━━━
+输出: `▶ 调用: /superpowers:systematic-debugging — 系统化排查问题`
 调用: /superpowers:systematic-debugging
 目标: 排查实现中发现的问题
 ```
@@ -494,6 +504,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 3 | Action: 代码独立审查 ━━━
+输出: `▶ 执行: 代码独立审查 — 派出 3 个并行审查 Agent（正确性/安全性/规范）`
 目标: 独立审查代码质量，多维度并行 + 置信度过滤
 ```
 
@@ -548,6 +559,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 4 | Action: 最终验证 ━━━
+输出: `▶ 调用: /superpowers:verification-before-completion — 运行测试、构建、覆盖率检查`
 调用: /superpowers:verification-before-completion
 目标: 运行测试、构建、覆盖率检查，确保一切正常
 ```
@@ -556,6 +568,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 4 | Action: 一致性验证 ━━━
+输出: `▶ 调用: /opsx:verify — 验证 OpenSpec 产物与实际实现一致`
 调用: /opsx:verify
 目标: 验证 OpenSpec 产物与实际实现一致
 ```
@@ -564,6 +577,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 4 | Action: 分支收尾 ━━━
+输出: `▶ 调用: /superpowers:finishing-a-development-branch — 合并/PR/清理`
 调用: /superpowers:finishing-a-development-branch
 目标: 合并/PR/清理 worktree
 ```
@@ -572,6 +586,7 @@ Phase 4 (CLOSE):
 
 ```
 ━━━ Phase 4 | Action: 归档 ━━━
+输出: `▶ 调用: /opsx:archive — 归档变更，合并 delta`
 调用: /opsx:archive
 目标: 归档变更，合并 delta
 ```
