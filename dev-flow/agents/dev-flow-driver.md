@@ -166,8 +166,7 @@ Phase 4 (CLOSE):
 
 **特殊路径 — 恢复未完成工作：**
 - 扫描项目根目录 `.dev-flow/` 下所有子目录中的 `state.json`
-- 如果只有一个未完成变更 → 直接恢复
-- 如果有多个 → 展示列表让用户选择
+- 展示所有未完成变更列表，用户显式选择要恢复的变更（即使只有一个也必须展示并等待确认）
 - 读取 state.json 恢复 Phase 0 推理结果和 Action 清单
 - 从 current_phase + current_action 继续，跳过已 completed 的 Action
 - 展示恢复摘要，用户确认后继续
