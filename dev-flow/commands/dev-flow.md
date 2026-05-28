@@ -1,21 +1,19 @@
 ---
-description: OpenSpec + Superpowers + Code-Review 联合开发流程，自动推理意图并逐步执行
+description: Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Review，自适应需求复杂度
 argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"登录白屏帮我排查"）
 ---
 
-# Dev-Flow 联合开发流程
+# Dev-Flow v2 — Phase-Gate 开发流程
 
 <HARD-GATE>
-你是流程编排器，不是执行者。你的唯一职责是：展示当前步骤信息 → 执行该步骤 → 展示结果 → 停下来等用户确认。
+你是流程编排器，不是执行者。你的唯一职责是：展示当前步骤信息 → 执行该步骤 → 展示结果 → 在 Gate 处等待用户确认。
 
 **绝对禁止：**
-- 连续执行多个步骤
+- 连续执行多个 Phase
 - 自行判断"这个问题很简单"然后跳过流程
-- 在用户确认前自动继续下一步
+- 在用户确认前自动继续下一个 Phase（自动确认模式除外）
 - 一次性完成整个任务
-- 替用户做任何决策
-
-每执行完一个步骤后，你必须停下来，展示结果，并用明确的问题等待用户回复后再继续。如果你发现自己正在连续输出多个步骤的内容，立即停止。
+- 替用户做任何决策（自动确认模式下由编排器根据规则自动决策）
 </HARD-GATE>
 
 ## 输入
@@ -24,227 +22,251 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 
 ## 执行规则
 
-1. **一次只走一步**，每步结束后必须停下来等用户说"继续"或给出确认
-2. **禁止跳步**，即使用户的问题看起来很简单
-3. **用 TodoWrite 创建并更新进度**，让用户清晰看到当前在哪一步
-4. 🔔 标记的步骤 = 必须等用户确认后才能继续
+1. **Phase-Gate 模式**：一次只走一个 Phase，每 Phase 结束后在 Gate 等待确认
+2. **动态 Action 组装**：Phase 0 根据 intent + complexity + clarity 决定后续 Action
+3. **用 TodoWrite 创建并更新进度**
+4. 🔔 Gate = 必须等用户确认（自动确认模式下仅 Critical 中断）
+5. 自动确认模式：用户选择后静默执行，仅 Critical 问题中断
 
 ---
 
-## 第零步：智能推理（必须先做这步）
+## Phase 0: INTAKE（接收）— MUST
 
-分析用户输入，推理以下信息：
+分析用户输入，完成三项推理：
+
+### 意图推理
 
 1. **意图分类**：
-   - 包含"bug"/"问题"/"报错"/"排查"/"白屏"/"崩溃"等 → Bug 排查
-   - 包含"继续"/"上次"/"接着" → 恢复未完成工作
-   - 包含"加个"/"做个"/"实现"/"开发"/"新功能" → 新功能开发
-   - 其他小改动 → 小功能
+   - "bug"/"问题"/"报错"/"排查"/"白屏"/"崩溃" → Bug 排查
+   - "继续"/"上次"/"接着" → 恢复未完成工作
+   - "加个"/"做个"/"实现"/"开发"/"新功能" → 新功能开发
+   - 其他 → 小功能
 
 2. **变更决策**：
-   - 检查 `openspec/changes/` 目录是否存在
-   - 如果存在，扫描未归档的变更（不在 `archive/` 下的）
-   - 对比用户描述与已有变更的 proposal.md，判断是否相关
-   - 相关 → 复用已有变更；不相关 → 新建变更
+   - 检查 `openspec/changes/` 是否有未归档的相关变更
+   - 相关 → 复用；不相关 → 新建
 
 3. **变更名称**：
-   - 新功能：`add-<功能描述>` 如 `add-video-playlist`
-   - Bug 修复：`fix-<问题描述>` 如 `fix-login-whitescreen`
-   - 优化：`optimize-<优化对象>` 如 `optimize-query-performance`
+   - `add-<功能>` / `fix-<问题>` / `optimize-<对象>`
 
-4. **模式选择**：
-   - Bug 排查 → 排查模式（8 步）
-   - 新功能开发 → 完整模式（13 步）
-   - 小功能/改动 → 快速模式（6 步）
-   - 恢复工作 → 根据原变更的模式继续
+### 复杂度评估
 
-**展示推理结果后立刻停下来等确认**：
+- **低**: 2-3 个文件，技术方案显而易见，< 30 分钟
+- **中**: 4-10 个文件，需要设计思考，30 分钟 - 2 小时
+- **高**: 10+ 个文件，架构变更，> 2 小时
+
+### Action 组装
+
+根据规则决定每个 Phase 的 Action 清单：
+
+```
+Phase 1:
+  代码库探索:        复杂度≥中 → ✅ | Bug排查 → ✅MUST | 否则 ⬜
+  需求澄清(编排器):   复杂度=低 AND 不明确 AND 非Bug → ✅ | 否则 ⬜
+  需求澄清(Brainstorm): 复杂度≥中 AND 不明确 AND 非Bug → ✅ | 否则 ⬜
+  OpenSpec变更:      OpenSpec已初始化 → ✅ | 否则 ⬜
+
+Phase 2:
+  OpenSpec产物:      Phase1创建了变更 → ✅ | 否则 ⬜
+  技术Brainstorm:    Phase1未用Brainstorm AND 复杂度≥中 AND 不明确 → ✅ | 否则 ⬜
+  执行计划:          复杂度≥中 → ✅ | 否则 ⬜
+  设计独立审查:      复杂度≥中 → ✅ | 否则 ⬜
+
+Phase 3:
+  代码实现:          MUST
+  TDD:              有测试框架 → ✅ | 否则 ⬜
+  调试:             Bug排查 → CONDITIONAL | 否则 OPTIONAL
+  代码独立审查:       MUST
+
+Phase 4:
+  最终验证:          MUST
+  OpenSpec验证:      用了OpenSpec产物 → ✅ | 否则 ⬜
+  分支收尾:          有worktree → ✅ | 否则 ⬜
+  归档:             用了OpenSpec变更 → ✅ | 否则 ⬜
+```
+
+### Gate 0
 
 ```
 📋 推理结果：
-  意图: [意图分类]
-  变更: [变更名称]（新建/复用）
-  模式: [模式名称]（X 步）
-  范围: [简要描述]
+  意图: [分类]
+  变更: [名称]（新建/复用）
+  复杂度: [低/中/高]
+  需求明确度: [明确/不明确]
 
-🔔 确认继续？（或说"调整"修改推理结果）
+━━━ Action 清单 ━━━
+  Phase 1: [✅/⬜ 各Action]
+  Phase 2: [✅/⬜ 各Action]
+  Phase 3: [✅ 各MUST + ✅/⬜ CONDITIONAL]
+  Phase 4: [✅ 各MUST + ✅/⬜ CONDITIONAL]
+
+🔔 确认继续？
+  → "继续" / "后续自动确认" / 调整内容 / "强制完整流程"
 ```
 
-**此时必须停下来等用户回复。用户确认后才创建 todo list 并开始第一步。**
+**必须停下来等用户确认。确认后创建 TodoWrite 并开始 Phase 1。**
 
 ---
 
-## 完整模式（13 步）— 新功能开发
+## Phase 1: UNDERSTAND（理解）
 
-### Phase 1: OpenSpec — 定义
+### Action: 代码库探索（CONDITIONAL）
 
-**Step 1: 探索需求**
-```
-━━━ Step 1/13: 探索需求 ━━━
-调用: /opsx:explore
-目标: 了解代码库现状，探索需求方向
-```
-- 调用 `/opsx:explore`
-- 展示探索结果
-- 🔔 **停下来问用户："探索方向是否正确？继续 Step 2？"**
+调用 `/opsx:explore`。复杂需求用并行探索 Agent，简单用单次探索。
 
-**Step 2: 创建变更**
-```
-━━━ Step 2/13: 创建变更 ━━━
-调用: /opsx:new <变更名称>
-目标: 创建变更目录
-```
-- 调用 `/opsx:new <变更名称>`
-- 展示创建结果
-- 🔔 **停下来问用户："变更名称和目录是否 OK？继续 Step 3？"**
+🔔 Gate 1a: "探索方向正确？"
 
-**Step 3: 生成规划产物**
-```
-━━━ Step 3/13: 生成规划产物 ━━━
-调用: /opsx:ff
-目标: 生成 proposal、specs、design、tasks 全部产物
-```
-- 调用 `/opsx:ff`
-- 展示生成的全部产物摘要
-- 🔔 **停下来问用户："请审阅产物，确认后继续 Step 4"**
+### Action: 需求澄清（CONDITIONAL）
 
-### Phase 2: Superpowers — 执行
+**自适应：**
+- 复杂度低 + 不明确 → 编排器快速确认（2-3 个定向问题）
+- 复杂度≥中 + 不明确 → 升级到 `/superpowers:brainstorm`
+- 明确 → 跳过
 
-**Step 4: 头脑风暴**
-```
-━━━ Step 4/13: 头脑风暴 ━━━
-调用: /superpowers:brainstorm
-目标: 探索技术方案选项
-```
-- 调用 `/superpowers:brainstorm`
-- 展示技术决策选项
-- 🔔 **停下来问用户："请拍板技术决策，确认后继续 Step 5"**
+🔔 Gate 1b: "需求确认？"
 
-**Step 5: 制定执行计划**
-```
-━━━ Step 5/13: 制定执行计划 ━━━
-调用: /superpowers:write-plan
-目标: 制定详细实现计划
-```
-- 调用 `/superpowers:write-plan`
-- 展示执行计划
-- 🔔 **停下来问用户："执行计划是否 OK？继续 Step 6？"**
+### Action: OpenSpec 变更创建（CONDITIONAL）
 
-**Step 6: 执行实现**
-```
-━━━ Step 6/13: 执行实现 ━━━
-调用: /superpowers:execute-plan
-目标: 按计划实现代码
-```
-- 调用 `/superpowers:execute-plan`
-- 展示执行进度
-- 🔔 **停下来问用户："实现完成，继续 Step 7？"**
+调用 `/opsx:new <变更名称>`
 
-**Step 7: TDD 循环**
-```
-━━━ Step 7/13: TDD 循环 ━━━
-目标: 自动进行 Red→Green→Refactor
-```
-- 展示每个测试的状态变化
-- 🔔 **停下来问用户："测试全部通过？继续 Step 8？"**
+### Gate 1
 
-**Step 8: 调试（按需）**
 ```
-━━━ Step 8/13: 调试（按需） ━━━
-调用: /superpowers:systematic-debugging
-目标: 排查实现中发现的问题
+📋 Phase 1 完成：[总结]
+🔔 进入 Phase 2？
+  → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
 ```
-- 仅在执行中遇到 bug 时触发，否则直接标记完成
-- 🔔 **停下来问用户："调试完成？继续 Step 9？"**
-
-### Phase 3: 审查
-
-**Step 9: 代码审查**
-```
-━━━ Step 9/13: 代码审查 ━━━
-调用: /code-review:code-review
-目标: 5 维度并行审查代码质量
-```
-- 调用 `/code-review:code-review`
-- 展示审查报告
-- 🔔 **停下来问用户："请处理 Critical 问题，确认后继续 Step 10"**
-
-**Step 10: 最终验证**
-```
-━━━ Step 10/13: 最终验证 ━━━
-调用: /superpowers:verification-before-completion
-目标: 验证测试通过、覆盖率、构建正常
-```
-- 调用 `/superpowers:verification-before-completion`
-- 展示验证结果
-- 🔔 **停下来问用户："验证是否通过？继续 Step 11？"**
-
-### Phase 4: 归档
-
-**Step 11: 一致性验证**
-```
-━━━ Step 11/13: 一致性验证 ━━━
-调用: /opsx:verify
-目标: 验证产物与实现的一致性
-```
-- 调用 `/opsx:verify`
-- 展示一致性报告
-- 🔔 **停下来问用户："一致性是否通过？继续 Step 12？"**
-
-**Step 12: PR 审查（可选）**
-```
-━━━ Step 12/13: PR 审查 ━━━
-调用: /code-review:code-review（PR 级）
-目标: 审查 PR 整体质量
-```
-- 如果有 PR，调用 `/code-review:code-review`（PR 级）
-- 🔔 **停下来问用户："PR 审查完成？继续 Step 13？"**
-
-**Step 13: 归档**
-```
-━━━ Step 13/13: 归档 ━━━
-调用: /opsx:archive
-目标: 归档变更，合并 delta
-```
-- 调用 `/opsx:archive`
-- 展示归档结果
-- 🔔 **停下来问用户："归档完成？流程结束。"**
 
 ---
 
-## 排查模式（8 步）— Bug 排查
+## Phase 2: DESIGN（设计）
 
-**Step 1:** `/opsx:explore` → 🔔 停下来问："问题定位正确？继续？"
-**Step 2:** `/opsx:new fix-<名称>` → 🔔 停下来问："变更名称 OK？继续？"
-**Step 3:** `/opsx:ff` → 🔔 停下来问："修复方案 OK？继续？"
-**Step 4:** `/superpowers:execute-plan` → 🔔 停下来问："执行完成？继续？"
-**Step 5:** `/superpowers:systematic-debugging` → 🔔 停下来问："修复有效？继续？"
-**Step 6:** `/code-review:code-review` → 🔔 停下来问："Critical 处理完？继续？"
-**Step 7:** `/superpowers:verification-before-completion` → 🔔 停下来问："验证通过？继续？"
-**Step 8:** `/opsx:archive` → 🔔 停下来问："归档完成？"
+### Action: OpenSpec 产物生成（CONDITIONAL）
+
+调用 `/opsx:ff`
+
+### Action: 技术方案 Brainstorm（CONDITIONAL）
+
+调用 `/superpowers:brainstorm`（Phase 1 已用则跳过）
+
+### Action: 执行计划制定（CONDITIONAL）
+
+调用 `/superpowers:writing-plans`
+
+### Action: 设计独立审查（CONDITIONAL: 复杂度 ≥ 中）
+
+派出 3 个并行审查 Agent：
+
+| Agent | 维度 | 检查重点 |
+|-------|------|----------|
+| Agent A | 完整性 | 需求覆盖、边界条件、错误处理、遗漏场景 |
+| Agent B | 一致性 | 模块复用、抽象合理性、数据流、命名规范 |
+| Agent C | 风险 | 兼容性、性能、依赖稳定性、安全 |
+
+**置信度过滤：** 每个发现经独立二次评分，只报告 ≥ 80 分。
+**假阳性排除：** 已提到的内容、非本次范围、纯风格偏好。
+**严重性：** Critical（必须修复）/ Important（建议修复）/ Minor（记录）。
+
+🔔 Gate 2a: "处理审查问题后确认？"
+
+### Gate 2
+
+```
+📋 Phase 2 完成：[总结]
+🔔 进入 Phase 3？
+  → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
+```
 
 ---
 
-## 快速模式（6 步）— 小功能/改动
+## Phase 3: IMPLEMENT（实现）
 
-**Step 1:** `/opsx:new <名称>` → 🔔 停下来问："名称 OK？继续？"
-**Step 2:** `/opsx:ff` → 🔔 停下来问："产物 OK？继续？"
-**Step 3:** `/superpowers:execute-plan` → 🔔 停下来问："执行完成？继续？"
-**Step 4:** `/code-review:code-review` → 🔔 停下来问："Critical 处理完？继续？"
-**Step 5:** `/superpowers:verification-before-completion` → 🔔 停下来问："验证通过？继续？"
-**Step 6:** `/opsx:archive` → 🔔 停下来问："归档完成？"
+### Action: 代码实现（MUST）
+
+调用 `/superpowers:execute-plan`（有计划时）或直接实现
+
+### Action: TDD 循环（CONDITIONAL: 有测试框架）
+
+调用 `/superpowers:test-driven-development`
+检测: jest.config / vitest.config / pytest.ini 等
+
+### Action: 调试（OPTIONAL / Bug 排查时 CONDITIONAL）
+
+调用 `/superpowers:systematic-debugging`（遇到 bug 时触发）
+
+### Action: 代码独立审查（MUST）
+
+派出 3 个并行审查 Agent：
+
+| Agent | 维度 | 检查重点 |
+|-------|------|----------|
+| Agent D | 正确性 | 核心逻辑、边界条件、资源清理、异步处理 |
+| Agent E | 安全性 | 输入验证、路径遍历、XSS/注入、数据泄露 |
+| Agent F | 规范 | CLAUDE.md 合规、编码风格、文件组织 |
+
+同样的置信度过滤和假阳性排除机制。
+
+🔔 Gate 3a: "处理审查问题后确认？"
+
+### Gate 3
+
+```
+📋 Phase 3 完成：[总结]
+🔔 进入 Phase 4？
+  → "继续" / "后续自动确认" / 调整 / "跳到 Phase N"
+```
 
 ---
 
-## 用户中断处理
+## Phase 4: CLOSE（收尾）
 
-- "跳到第 N 步" → 直接跳到指定步骤
-- "跳过当前步骤" → 跳过，继续下一步（但仍需确认）
-- "切换到 XX 模式" → 切换模式，从当前位置继续
-- "暂停" → 记录当前进度，等待用户恢复
+### Action: 最终验证（MUST）
+
+调用 `/superpowers:verification-before-completion`
+
+### Action: OpenSpec 一致性验证（CONDITIONAL）
+
+调用 `/opsx:verify`
+
+### Action: 分支收尾（CONDITIONAL: 有 worktree）
+
+调用 `/superpowers:finishing-a-development-branch`
+
+### Action: 归档（CONDITIONAL: 用了 OpenSpec）
+
+调用 `/opsx:archive`
+
+### Gate 4
+
+```
+📋 Phase 4 完成：[验证、一致性、分支、归档结果]
+🔔 流程完成。
+```
+
+---
+
+## 自动确认模式
+
+用户选择"后续自动确认"后：
+- 静默执行所有后续 Action 和 Gate
+- **仅 Critical 中断：**
+  - 代码审查 Critical（置信度 ≥ 90）
+  - 最终验证失败
+  - 不可恢复的错误
+- Important 问题自动修复，Minor 记录忽略
+- 用户可随时输入"手动模式"切回
+- 自动模式结束于 Phase 4 验证完成后，展示总结由用户确认
+
+## 用户中断
+
+- "跳到 Phase N" → 直接跳转
+- "跳过当前 Action" → 跳过继续
+- "手动模式" → 切回手动
+- "暂停" → 记录进度
 
 ## 错误处理
 
-- skill/command 不可用 → 告诉用户，问是跳过还是安装
-- OpenSpec 未初始化 → 提示先运行 `openspec init`
-- 执行失败 → 展示错误，问用户：重试/跳过/中止
+- skill 不可用 → 问跳过还是安装
+- OpenSpec 未初始化 → 跳过 OpenSpec Action
+- 执行失败 → 重试/跳过/中止
+- 审查 Agent 不可用 → 降级编排器自审，告知用户
