@@ -488,6 +488,8 @@ Phase 4 (CLOSE):
 - 存在 → 运行测试确认可执行 → 触发 TDD
 - 不存在 → 跳过 TDD，Phase 4 必须通过其他方式验证
 
+**测试夹具指导（CONDITIONAL: 复杂度 ≥ 中）**：复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
+
 ### Action 3.3: 调试（OPTIONAL / Bug 排查时 CONDITIONAL）
 
 ```
@@ -562,6 +564,9 @@ Phase 4 (CLOSE):
 输出: `▶ 调用: /superpowers:verification-before-completion — 运行测试、构建、覆盖率检查`
 调用: /superpowers:verification-before-completion
 目标: 运行测试、构建、覆盖率检查，确保一切正常
+```
+
+**阳性对照检查（推荐，非阻塞）**：验证核心功能路径至少有 1 个已知正确的测试用例通过。如果没有阳性对照用例，提示用户但不阻塞流程。
 ```
 
 ### Action 4.2: OpenSpec 一致性验证（CONDITIONAL: 使用了 OpenSpec 产物生成）

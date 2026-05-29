@@ -78,11 +78,13 @@ Phase 2:
 Phase 3:
   代码实现:          MUST
   TDD:              有测试框架 → ✅ | 否则 ⬜
+  测试夹具:          TDD已触发 AND 复杂度≥中 → ✅ | 否则 ⬜
   调试:             Bug排查 → CONDITIONAL | 否则 OPTIONAL
   代码独立审查:       MUST
 
 Phase 4:
   最终验证:          MUST
+  阳性对照检查:      推荐（非阻塞）→ ✅ | 无测试时 ⬜
   OpenSpec验证:      用了OpenSpec产物 → ✅ | 否则 ⬜
   分支收尾:          有worktree → ✅ | 否则 ⬜
   归档:             用了OpenSpec变更 → ✅ | 否则 ⬜
@@ -267,6 +269,8 @@ Phase 4:
 调用 `/superpowers:test-driven-development`
 检测: jest.config / vitest.config / pytest.ini 等
 
+**测试夹具指导（CONDITIONAL: 复杂度 ≥ 中）**：复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
+
 ### Action: 调试（OPTIONAL / Bug 排查时 CONDITIONAL）
 
 调用 `/superpowers:systematic-debugging`（遇到 bug 时触发）
@@ -323,6 +327,8 @@ Phase 4:
 ### Action: 最终验证（MUST）
 
 调用 `/superpowers:verification-before-completion`
+
+**阳性对照检查（推荐，非阻塞）**：验证核心功能路径至少有 1 个已知正确的测试用例通过。如果没有阳性对照用例，提示用户但不阻塞流程。
 
 ### Action: OpenSpec 一致性验证（CONDITIONAL）
 
