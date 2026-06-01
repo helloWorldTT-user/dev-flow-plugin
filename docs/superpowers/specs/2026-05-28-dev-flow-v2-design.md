@@ -331,6 +331,46 @@ Phase 4: CLOSE（收尾）
 2. Phase 3 代码独立审查（防止代码缺陷）
 3. Phase 4 最终验证（防止功能回归）
 
+### v2.4 新增机制
+
+#### 环境自动检测
+
+Phase 0 意图推理之前，先通过 shell 命令实际检测项目环境：
+1. `ls openspec/` — 检测 OpenSpec 是否初始化
+2. `ls jest.config.* vitest.config.* pytest.ini` — 检测测试框架
+3. `git worktree list` — 检测 worktree
+
+检测结果写入 state.json，Action 组装基于实际检测结果而非 LLM 猜测。
+
+#### 运行时复杂度升级
+
+执行中发现实际复杂度超过 Phase 0 评估时（如预计改 2 个文件实际改了 6 个），编排器暂停当前 Action，用 AskUserQuestion 提示用户升级流程，将被跳过的 CONDITIONAL Action 重新激活。
+
+#### 产物传递校验
+
+Phase 3 开始前自动执行：
+- 检查 `artifacts.design_doc` 和 `artifacts.plan_doc` 对应的文件是否存在且非空
+- 产物被删除或清空 → 建议回到 Phase 2 重新生成
+- 校验通过 → 输出 `✅ 产物校验通过`
+
+#### 规范漂移检测
+
+Phase 4 最终验证时（有设计文档才执行）：
+- 对比设计文档描述的功能点与实际代码实现
+- 检测三类漂移：遗漏（设计中但未实现）、范围蔓延（实现了但设计中无）、方案偏离（实现方式与设计不符）
+- 检测到漂移时列出具体项，用 AskUserQuestion 让用户选择处理方式
+
+#### 脏工作树处理
+
+恢复工作时自动执行：
+1. 运行 `git status` 检查未提交变更
+2. 如存在 → 展示文件列表，用 AskUserQuestion 让用户确认归属（属于当前变更/不属于/不确定）
+3. 不允许在未确认归属的情况下继续恢复
+
+#### 上下文压缩恢复
+
+state.json 新增 `recovery_context` 字段（自然语言摘要），每个 Action 完成和 Phase Gate 确认后更新。内容包含：当前 Phase/Action、已完成的关键发现、下一步、已生成的产物路径。用于上下文被压缩后快速恢复理解。
+
 ### 产出物清单
 
 **持久化（提交到 git）：**

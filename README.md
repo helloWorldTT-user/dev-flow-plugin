@@ -11,6 +11,12 @@ Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Re
 - **自动确认模式** — 用户可在任意 Gate 选择"后续自动确认"，编排器自动执行
 - **特殊路径支持** — Bug 排查（偏重探索+调试）、恢复工作（从断点继续）
 - **中断恢复** — 流程状态自动持久化到 `.dev-flow/<变更名>/state.json`，关机重启后可从断点继续，支持多变更并行
+- **环境自动检测** — Phase 0 通过 shell 命令实际检测 OpenSpec、测试框架、worktree，不靠 LLM 猜测
+- **运行时复杂度升级** — 执行中发现实际复杂度超预期时，主动提示用户升级流程
+- **产物传递校验** — Phase 3 开始前校验 Phase 2 设计产物完整性
+- **规范漂移检测** — Phase 4 对比设计文档与实际代码，发现遗漏、范围蔓延、方案偏离
+- **脏工作树处理** — 恢复工作时检测未提交变更，确认归属后才能继续
+- **上下文压缩恢复** — state.json 包含 recovery_context 摘要，压缩后快速恢复理解
 
 Dev-Flow 会自动推理用户意图、评估复杂度，动态组装最合适的流程。
 
@@ -54,7 +60,7 @@ Dev-Flow 会自动：
 
 ```
 Phase 0: INTAKE（接收）
-  意图推理 → 复杂度评估 → Action 组装 → Gate 0 用户确认
+  环境检测 → 意图推理 → 复杂度评估 → Action 组装 → Gate 0 用户确认
 
 Phase 1: UNDERSTAND（理解）
   代码探索 → 需求澄清 → OpenSpec 变更 → Gate 1
@@ -63,48 +69,51 @@ Phase 2: DESIGN（设计）
   产物生成 → 技术方案 → 执行计划 → 设计独立审查 → Gate 2
 
 Phase 3: IMPLEMENT（实现）
-  代码实现 → TDD → 调试 → 代码独立审查 → Gate 3
+  产物校验 → 代码实现 → TDD → 调试 → 代码独立审查 → Gate 3
 
 Phase 4: CLOSE（收尾）
-  最终验证 → 一致性验证 → 分支收尾 → 归档 → Gate 4
+  最终验证 → 漂移检测 → 一致性验证 → 分支收尾 → 归档 → Gate 4
 ```
 
 ## 流程步骤与 Skill 命令对照
 
 ```
 Phase 0: INTAKE（接收）
-  ① 意图推理          — 编排器内置（关键词匹配 + 复杂度评估）
-  ② Action 组装        — 编排器内置（动态决定后续步骤）
+  ① 环境检测           — shell 命令检测 OpenSpec/测试框架/worktree
+  ② 意图推理           — 编排器内置（关键词匹配 + 复杂度评估）
+  ③ Action 组装        — 编排器内置（动态决定后续步骤）
   🔔 Gate 0: 用户确认推理结果和 Action 清单
 
 Phase 1: UNDERSTAND（理解）
-  ③ 代码库探索         /opsx:explore                  [CONDITIONAL: 复杂度≥中 / Bug排查时MUST]
-  ④ 需求澄清（简单）    — 编排器快速确认（2-3 个定向问题）[CONDITIONAL: 低复杂度+不明确]
-  ④ 需求澄清（复杂）    /superpowers:brainstorm         [CONDITIONAL: 中高复杂度+不明确]
-  ⑤ OpenSpec 变更创建   /opsx:new <名称>                [CONDITIONAL: OpenSpec 已初始化]
+  ④ 代码库探索         /opsx:explore                  [CONDITIONAL: 复杂度≥中 / Bug排查时MUST]
+  ⑤ 需求澄清（简单）    — 编排器快速确认（2-3 个定向问题）[CONDITIONAL: 低复杂度+不明确]
+  ⑤ 需求澄清（复杂）    /superpowers:brainstorm         [CONDITIONAL: 中高复杂度+不明确]
+  ⑥ OpenSpec 变更创建   /opsx:new <名称>                [CONDITIONAL: OpenSpec 已初始化]
   🔔 Gate 1: 用户确认理解正确
 
 Phase 2: DESIGN（设计）
-  ⑥ OpenSpec 产物生成   /opsx:ff                        [CONDITIONAL: 使用了变更创建]
-  ⑦ 技术方案 Brainstorm /superpowers:brainstorm          [CONDITIONAL: Phase1 未用 + 复杂度≥中]
-  ⑧ 执行计划制定        /superpowers:writing-plans       [CONDITIONAL: 复杂度≥中]
-  ⑨ 设计独立审查        — 3 并行 Agent（完整性/一致性/风险）[CONDITIONAL: 复杂度≥中]
+  ⑦ OpenSpec 产物生成   /opsx:ff                        [CONDITIONAL: 使用了变更创建]
+  ⑧ 技术方案 Brainstorm /superpowers:brainstorm          [CONDITIONAL: Phase1 未用 + 复杂度≥中]
+  ⑨ 执行计划制定        /superpowers:writing-plans       [CONDITIONAL: 复杂度≥中]
+  ⑩ 设计独立审查        — 3 并行 Agent（完整性/一致性/风险）[CONDITIONAL: 复杂度≥中]
   🔔 Gate 2a: 审查结果确认
   🔔 Gate 2: 用户确认设计通过
 
 Phase 3: IMPLEMENT（实现）
-  ⑩ 代码实现           /superpowers:execute-plan        [MUST]
-  ⑪ TDD 循环           /superpowers:test-driven-development  [CONDITIONAL: 有测试框架]
-  ⑫ 调试               /superpowers:systematic-debugging     [OPTIONAL / Bug排查时CONDITIONAL]
-  ⑬ 代码独立审查        — 3 并行 Agent（正确性/安全性/规范） [MUST]
+  ⑪ 产物传递校验        — 检查设计文档/计划文档完整性      [自动执行]
+  ⑫ 代码实现           /superpowers:execute-plan        [MUST]
+  ⑬ TDD 循环           /superpowers:test-driven-development  [CONDITIONAL: 有测试框架]
+  ⑭ 调试               /superpowers:systematic-debugging     [OPTIONAL / Bug排查时CONDITIONAL]
+  ⑮ 代码独立审查        — 3 并行 Agent（正确性/安全性/规范） [MUST]
   🔔 Gate 3a: 审查结果确认
   🔔 Gate 3: 用户确认实现通过
 
 Phase 4: CLOSE（收尾）
-  ⑭ 最终验证           /superpowers:verification-before-completion  [MUST]
-  ⑮ 一致性验证         /opsx:verify                     [CONDITIONAL: 使用了 OpenSpec 产物]
-  ⑯ 分支收尾           /superpowers:finishing-a-development-branch [CONDITIONAL: 有 worktree]
-  ⑰ 归档               /opsx:archive                    [CONDITIONAL: 使用了 OpenSpec 变更]
+  ⑯ 最终验证           /superpowers:verification-before-completion  [MUST]
+  ⑰ 规范漂移检测        — 对比设计文档 vs 实际代码          [有设计文档时执行]
+  ⑱ 一致性验证         /opsx:verify                     [CONDITIONAL: 使用了 OpenSpec 产物]
+  ⑲ 分支收尾           /superpowers:finishing-a-development-branch [CONDITIONAL: 有 worktree]
+  ⑳ 归档               /opsx:archive                    [CONDITIONAL: 使用了 OpenSpec 变更]
   🔔 Gate 4: 流程完成
 ```
 
@@ -137,10 +146,18 @@ dev-flow-plugin/
 流程状态自动持久化到 `.dev-flow/<变更名>/state.json`，关机重启后可从断点继续。
 
 - 支持多个变更并行追踪（每个变更独立状态文件）
-- 恢复时列出所有未完成变更，用户显式选择要继续哪个
+- 恢复时列出所有未完成变更，用户显式选择要继续哪个（即使只有一个也展示选择）
 - 从上次中断的 Phase + Action 继续，跳过已完成的步骤
 - 不依赖 OpenSpec，以 `.dev-flow/` 为唯一真相源
+- **脏工作树处理**：恢复前检测未提交 git 变更，确认归属后才能继续
+- **上下文压缩恢复**：state.json 包含 `recovery_context` 摘要字段，压缩后快速恢复理解
 - Phase 4 归档后自动清理状态文件
+
+## 运行时优化
+
+- **复杂度升级**：执行中发现实际复杂度超 Phase 0 评估时，暂停提示用户升级流程
+- **产物传递校验**：Phase 3 开始前校验 Phase 2 设计文档和计划文档未被意外修改
+- **规范漂移检测**：Phase 4 对比设计文档与实际代码，检测遗漏、范围蔓延和方案偏离
 
 ## 卸载
 
