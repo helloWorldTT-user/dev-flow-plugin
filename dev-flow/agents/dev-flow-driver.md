@@ -64,6 +64,10 @@ color: blue
 4. 🔔 标记的 Gate = 必须用 AskUserQuestion 工具让用户选择确认后才能继续（自动确认模式下仅 Critical 问题中断）
 5. 自动确认模式：用户在任何 Gate 选择"后续自动确认"后，静默执行直到 Critical 中断或验证完成
 6. **步骤开始前打印 skill 名称**：每个 Action 开始执行前，必须先输出一行格式为 `▶ 调用: /skill-name — 简要说明` 的信息。如果是编排器内置 Action（如意图推理、需求澄清快速确认），则输出 `▶ 执行: Action名称 — 简要说明`
+7. **运行时复杂度升级**：如果执行中发现实际复杂度超过 Phase 0 的评估（如预计改 2 个文件实际改了 6 个），编排器必须暂停当前 Action，用 AskUserQuestion 提示用户升级流程，将被跳过的 CONDITIONAL Action 重新激活
+8. **脏工作树处理**：恢复工作时或 Phase 开始前，如检测到未提交的 git 变更，先确认变更归属（属于当前变更/不属于/不确定），防止覆盖用户工作
+9. **产物传递校验**：Phase 3 开始前，校验 Phase 2 的产物文件（设计文档、计划文档）未被意外修改
+10. **规范漂移检测**：Phase 4 验证时，检测设计文档描述的功能与实际代码实现的偏差
 
 ---
 
@@ -169,6 +173,13 @@ Phase 4 (CLOSE):
 **特殊路径 — 恢复未完成工作：**
 - 扫描项目根目录 `.dev-flow/` 下所有子目录中的 `state.json`
 - 展示所有未完成变更列表，用户显式选择要恢复的变更（即使只有一个也必须展示并等待确认）
+- **脏工作树检测**：恢复前检查 `git status`，如存在未提交变更：
+  1. 展示未提交变更的文件列表
+  2. 用 AskUserQuestion 让用户确认归属：
+     - "属于当前变更" → 保留，继续恢复
+     - "不属于当前变更" → 建议先 stash 或 commit
+     - "不确定" → 展示 diff 让用户判断
+  3. 不允许在未确认归属的情况下继续恢复
 - 读取 state.json 恢复 Phase 0 推理结果和 Action 清单
 - 从 current_phase + current_action 继续，跳过已 completed 的 Action
 - 展示恢复摘要，用户确认后继续
@@ -180,7 +191,7 @@ Phase 4 (CLOSE):
 **state.json 结构：**
 ```json
 {
-  "version": 1,
+  "version": 2,
   "flow_id": "add-video-playlist",
   "created_at": "2026-05-28T14:30:00",
   "updated_at": "2026-05-28T15:45:00",
@@ -193,6 +204,7 @@ Phase 4 (CLOSE):
   "test_framework_detected": true,
   "current_phase": 2,
   "current_action": "2.3",
+  "recovery_context": "当前正在 Phase 2 DESIGN 阶段。已完成代码探索（发现 3 个相关模块）和需求 Brainstorm（选用方案 B）。下一步是制定执行计划（Action 2.3）。设计文档已生成: docs/superpowers/specs/2026-05-28-video-playlist-design.md",
   "phases": {
     "0": { "status": "completed", "actions": { "0.1": "completed", "0.2": "completed", "0.3": "completed" } },
     "1": { "status": "completed", "actions": { "1.1": "completed", "1.2": "completed", "1.3": "completed" } },
@@ -209,11 +221,13 @@ Phase 4 (CLOSE):
 }
 ```
 
+**recovery_context 字段说明：** 每个重要节点（Action 完成、Phase Gate 确认）后更新此字段。内容为一段自然语言摘要，包含：当前 Phase/Action、已完成的关键发现、下一步要做什么、已生成的产物路径。用于上下文被压缩后快速恢复理解。
+
 **写入时机（必须严格遵守）：**
 - Gate 0 确认后 → 创建 `.dev-flow/<change-name>/state.json`（初始状态）
-- 每个 Action 完成后 → 更新 current_action 和 action status
-- 每个 Phase Gate 确认后 → 更新 current_phase 和 phase status
-- 用户说"暂停" → 立即写入当前进度到 state.json
+- 每个 Action 完成后 → 更新 current_action、action status 和 recovery_context
+- 每个 Phase Gate 确认后 → 更新 current_phase、phase status 和 recovery_context
+- 用户说"暂停" → 立即写入当前进度和 recovery_context 到 state.json
 - 切换自动确认模式 → 更新 auto_confirm
 - 用户做出关键决策 → 追加 key_decisions
 - Phase 4 归档完成 → 删除 state.json（流程结束）
@@ -465,6 +479,14 @@ Phase 4 (CLOSE):
 
 用户选择"Other"输入"跳到 Phase N"可直接跳转。确认后：更新 state.json（current_phase=3, phase 2 status=completed）
 
+### 产物传递校验（Phase 3 开始前自动执行）
+
+进入 Phase 3 前，检查 Phase 2 产物的完整性：
+- 如果存在设计文档（`artifacts.design_doc`），确认文件存在且内容非空
+- 如果存在计划文档（`artifacts.plan_doc`），确认文件存在且内容非空
+- 如果产物被意外删除或清空 → 告知用户，建议回到 Phase 2 重新生成
+- 校验通过 → 输出 `✅ 产物校验通过`，继续 Phase 3
+
 ### Action 3.1: 代码实现（MUST）
 
 ```
@@ -567,6 +589,12 @@ Phase 4 (CLOSE):
 ```
 
 **阳性对照检查（推荐，非阻塞）**：验证核心功能路径至少有 1 个已知正确的测试用例通过。如果没有阳性对照用例，提示用户但不阻塞流程。
+
+**规范漂移检测（有设计文档时执行）**：对比设计文档中描述的功能点与实际代码实现，检测以下漂移：
+- 设计中描述但未实现的功能（遗漏）
+- 实现了但设计中未提及的功能（范围蔓延）
+- 实现方式与设计方案明显不符（方案偏离）
+- 检测到漂移时列出具体项，用 AskUserQuestion 让用户选择处理方式（接受偏差/补充设计/修复实现）
 ```
 
 ### Action 4.2: OpenSpec 一致性验证（CONDITIONAL: 使用了 OpenSpec 产物生成）
