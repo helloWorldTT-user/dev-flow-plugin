@@ -38,7 +38,12 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 
 ## Phase 0: INTAKE（接收）— MUST
 
-分析用户输入，完成三项推理：
+### 环境检测（必须先执行，不能靠猜测）
+
+在意图推理之前，先执行实际检测：
+1. **OpenSpec**：运行 `ls openspec/` 确认目录存在 → 存在则所有 OpenSpec Action 可用
+2. **测试框架**：运行 `ls jest.config.* vitest.config.* pytest.ini 2>/dev/null` → 存在则 TDD 可用
+3. **Worktree**：运行 `git worktree list` → 有活跃 worktree 则分支收尾可用
 
 ### 意图推理
 

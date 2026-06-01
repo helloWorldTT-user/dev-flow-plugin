@@ -73,9 +73,17 @@ color: blue
 
 ## Phase 0: INTAKE（接收）— MUST
 
-### Action 0.1: 意图推理
+### Action 0.1: 意图推理 + 环境检测
 
-分析用户输入，推理以下信息：
+**必须先执行环境检测**，然后再进行意图推理。不能靠猜测判断工具是否可用。
+
+**环境检测（Action 开始时立即执行）：**
+1. **OpenSpec 检测**：运行 `ls openspec/` 或 `test -d openspec` 确认目录存在。如存在 → `openspec_initialized = true`；不存在 → `false`
+2. **测试框架检测**：运行 `ls jest.config.* vitest.config.* pytest.ini pyproject.toml 2>/dev/null` 检查测试配置。如存在 → `test_framework_detected = true`
+3. **Worktree 检测**：运行 `git worktree list` 检查是否有活跃 worktree
+4. 将检测结果记入 state.json（创建时写入）
+
+**意图推理：**
 
 1. **意图分类**：
    - 包含"bug"/"问题"/"报错"/"排查"/"白屏"/"崩溃"等 → Bug 排查
