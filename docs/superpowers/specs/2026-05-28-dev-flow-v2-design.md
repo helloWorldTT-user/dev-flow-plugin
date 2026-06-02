@@ -129,7 +129,9 @@ Phase 4: CLOSE（收尾）
   "artifacts": {
     "design_doc": "docs/superpowers/specs/2026-05-28-video-playlist-design.md",
     "plan_doc": null,
-    "openspec_change_dir": "openspec/changes/add-video-playlist/"
+    "openspec_change_dir": "openspec/changes/add-video-playlist/",
+    "openspec_archive_path": null,
+    "openspec_archived_at": null
   },
   "key_decisions": [
     "技术方案选用 fetch+ReadableStream MVP",
@@ -148,7 +150,8 @@ Phase 4: CLOSE（收尾）
 | 用户说"暂停" | 立即写入当前进度 |
 | 切换自动确认模式 | 更新 auto_confirm |
 | 记录关键决策时 | 追加 key_decisions |
-| Phase 4 归档完成 | 删除 state.json（或移动到 .dev-flow/archive/） |
+| Phase 4 归档后置同步 | 更新 artifacts.openspec_archive_path 和 openspec_archived_at |
+| Phase 4 Gate 4 确认后 | 删除 state.json（或移动到 .dev-flow/archive/） |
 
 #### Phase 1: UNDERSTAND
 
@@ -210,7 +213,7 @@ Phase 4: CLOSE（收尾）
 | 最终验证 | MUST | 始终执行 |
 | OpenSpec 一致性验证 | CONDITIONAL | 使用了 OpenSpec 产物生成 |
 | 分支收尾 | CONDITIONAL | 检测到 git worktree |
-| 归档 | CONDITIONAL | 使用了 OpenSpec 变更创建 |
+| 归档（前置校验 → 执行 → 后置同步） | CONDITIONAL | 使用了 OpenSpec 变更创建 |
 
 ### 独立审查
 
@@ -262,7 +265,7 @@ Phase 4: CLOSE（收尾）
 | Phase 1 | 变更创建 | `/opsx:new <name>` | 创建变更目录 |
 | Phase 2 | 产物生成 | `/opsx:ff` | 生成 proposal/specs/design/tasks |
 | Phase 4 | 一致性验证 | `/opsx:verify` | 产物与实现一致性 |
-| Phase 4 | 归档 | `/opsx:archive` | 归档变更 |
+| Phase 4 | 归档 | `/opsx:archive` | 前置校验 → 归档变更 → 后置同步（更新 state.json 归档字段） |
 
 #### Superpowers
 

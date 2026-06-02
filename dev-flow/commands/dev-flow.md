@@ -355,7 +355,11 @@ Phase 4:
 
 ### Action: 归档（CONDITIONAL: 用了 OpenSpec）
 
-调用 `/opsx:archive`
+**归档三步流程：前置校验 → 执行归档 → 后置同步**
+
+1. **前置校验**：确认 `openspec/changes/<name>/` 目录存在且产物完整（至少有 proposal）。校验失败时询问用户：跳过归档 / 回到 Phase 2 重新生成
+2. **执行归档**：调用 `/opsx:archive`
+3. **后置同步**：确认归档成功 → 更新 state.json（`artifacts.openspec_archive_path` 和 `openspec_archived_at`）。归档失败时询问用户：重试 / 跳过 / 中止
 
 ### Gate 4
 

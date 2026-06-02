@@ -223,7 +223,9 @@ Phase 4 (CLOSE):
   "artifacts": {
     "design_doc": "docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md",
     "plan_doc": null,
-    "openspec_change_dir": "openspec/changes/<name>/"
+    "openspec_change_dir": "openspec/changes/<name>/",
+    "openspec_archive_path": null,
+    "openspec_archived_at": null
   },
   "key_decisions": []
 }
@@ -238,7 +240,8 @@ Phase 4 (CLOSE):
 - 用户说"暂停" → 立即写入当前进度和 recovery_context 到 state.json
 - 切换自动确认模式 → 更新 auto_confirm
 - 用户做出关键决策 → 追加 key_decisions
-- Phase 4 归档完成 → 删除 state.json（流程结束）
+- Phase 4 归档后置同步 → 更新 artifacts.openspec_archive_path 和 openspec_archived_at
+- Phase 4 Gate 4 确认后 → 删除 state.json（流程结束）
 
 ### Gate 0: 用户确认推理结果
 
@@ -625,12 +628,33 @@ Phase 4 (CLOSE):
 
 ### Action 4.4: 归档（CONDITIONAL: 使用了 OpenSpec 变更创建）
 
+**归档三步流程：前置校验 → 执行归档 → 后置同步**
+
+**Step A — 前置校验（归档前必须执行）：**
+1. 确认 `openspec/changes/<name>/` 目录存在
+2. 检查产物完整性：至少包含 proposal 文件
+3. 校验 `artifacts.openspec_change_dir` 与实际目录一致
+4. 校验失败时：
+   - 产物缺失 → 用 AskUserQuestion 询问：跳过归档 / 回到 Phase 2 重新生成
+   - 目录不存在 → 检查是否已被归档，如已归档则跳过，否则告知用户
+
+**Step B — 执行归档：**
 ```
 ━━━ Phase 4 | Action: 归档 ━━━
 输出: `▶ 调用: /opsx:archive — 归档变更，合并 delta`
 调用: /opsx:archive
 目标: 归档变更，合并 delta
 ```
+
+**Step C — 后置同步（归档后必须执行）：**
+1. 确认归档成功（检查 `openspec/archive/` 中出现对应目录）
+2. 更新 state.json：
+   - `artifacts.openspec_archive_path` = `"openspec/archive/<name>/"`
+   - `artifacts.openspec_archived_at` = 当前时间戳
+3. 检查 `openspec/changes/<name>/` 是否已被 `/opsx:archive` 自动清理：
+   - 如已清理 → 确认完成
+   - 如未清理 → 不主动删除（由用户或 OpenSpec 插件管理），记录日志
+4. 归档失败时 → 用 AskUserQuestion 询问：重试 / 跳过归档 / 中止
 
 ### Gate 4: 流程完成确认
 
