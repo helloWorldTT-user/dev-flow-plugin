@@ -151,7 +151,9 @@ Phase 2 (DESIGN):
 
 Phase 3 (IMPLEMENT):
   代码实现: ✅ MUST（始终执行）
-  TDD 循环: ✅ MUST（始终执行，TDD 是强制开发规范）
+  TDD 循环:
+    - 复杂度 ≥ 中 → ✅ MUST（必须执行 TDD）
+    - 复杂度 = 低 → ✅ CONDITIONAL（用户可在 Gate 0 确认时跳过）
     - 如项目无测试框架，先初始化测试基础设施再开始 TDD
   测试夹具:
     - 有测试框架 AND 复杂度 ≥ 中 → ✅
@@ -509,7 +511,7 @@ Phase 4 (CLOSE):
 目标: 按计划或设计实现代码
 ```
 
-### Action 3.2: TDD 循环（MUST — 始终执行）
+### Action 3.2: TDD 循环（MUST when 复杂度≥中, CONDITIONAL when 复杂度=低）
 
 ```
 ━━━ Phase 3 | Action: TDD 循环 ━━━
@@ -518,7 +520,7 @@ Phase 4 (CLOSE):
 目标: Red → Green → Refactor
 ```
 
-TDD 是强制开发规范，无论项目是否有测试框架都必须执行。如项目无测试框架，先初始化测试基础设施再开始 TDD。
+复杂度 ≥ 中时必须执行 TDD。复杂度 = 低时为 CONDITIONAL，用户可在 Gate 0 确认时选择跳过。如项目无测试框架，先初始化测试基础设施再开始 TDD。
 
 **测试夹具指导（CONDITIONAL: 有测试框架 AND 复杂度 ≥ 中）**：有测试框架且复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
 

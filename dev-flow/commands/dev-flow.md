@@ -86,7 +86,7 @@ Phase 2:
 
 Phase 3:
   代码实现:          MUST
-  TDD:              MUST（始终执行，TDD 是强制规范）
+  TDD:              复杂度≥中 → MUST | 复杂度=低 → CONDITIONAL（用户可在 Gate 0 确认时跳过）
   测试夹具:          有测试框架 AND 复杂度≥中 → ✅ | 否则 ⬜
   调试:             Bug排查 → CONDITIONAL | 否则 OPTIONAL
   代码独立审查:       MUST
@@ -277,10 +277,10 @@ Phase 4:
 
 调用 `/superpowers:execute-plan`（有计划时）或直接实现
 
-### Action: TDD 循环（MUST — 始终执行）
+### Action: TDD 循环（MUST when 复杂度≥中, CONDITIONAL when 复杂度=低）
 
 调用 `/superpowers:test-driven-development`
-TDD 是强制开发规范，无论项目是否有测试框架都必须执行。如项目无测试框架，先初始化测试基础设施再开始 TDD。
+复杂度 ≥ 中时必须执行 TDD。复杂度 = 低时为 CONDITIONAL，用户可在 Gate 0 确认时选择跳过。如项目无测试框架，先初始化测试基础设施再开始 TDD。
 
 **测试夹具指导（CONDITIONAL: 有测试框架 AND 复杂度 ≥ 中）**：有测试框架且复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
 
