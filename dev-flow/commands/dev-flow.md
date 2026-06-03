@@ -42,7 +42,7 @@ argument-hint: 功能描述或问题（如"给视频平台加个收藏夹"或"�
 
 在意图推理之前，先执行实际检测：
 1. **OpenSpec**：运行 `ls openspec/` 确认目录存在 → 存在则所有 OpenSpec Action 可用
-2. **测试框架**：运行 `ls jest.config.* vitest.config.* pytest.ini 2>/dev/null` → 存在则 TDD 可用
+2. **测试框架**：运行 `ls jest.config.* vitest.config.* pytest.ini pyproject.toml 2>/dev/null; cat package.json 2>/dev/null | grep -q '"test"'` → 存在则 `test_framework_detected = true`（用于测试夹具条件判断）
 3. **Worktree**：运行 `git worktree list` → 有活跃 worktree 则分支收尾可用
 
 ### 意图推理
@@ -86,8 +86,8 @@ Phase 2:
 
 Phase 3:
   代码实现:          MUST
-  TDD:              有测试框架 → ✅ | 否则 ⬜
-  测试夹具:          TDD已触发 AND 复杂度≥中 → ✅ | 否则 ⬜
+  TDD:              MUST（始终执行，TDD 是强制规范）
+  测试夹具:          有测试框架 AND 复杂度≥中 → ✅ | 否则 ⬜
   调试:             Bug排查 → CONDITIONAL | 否则 OPTIONAL
   代码独立审查:       MUST
 
@@ -277,12 +277,12 @@ Phase 4:
 
 调用 `/superpowers:execute-plan`（有计划时）或直接实现
 
-### Action: TDD 循环（CONDITIONAL: 有测试框架）
+### Action: TDD 循环（MUST — 始终执行）
 
 调用 `/superpowers:test-driven-development`
-检测: jest.config / vitest.config / pytest.ini 等
+TDD 是强制开发规范，无论项目是否有测试框架都必须执行。如项目无测试框架，先初始化测试基础设施再开始 TDD。
 
-**测试夹具指导（CONDITIONAL: 复杂度 ≥ 中）**：复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
+**测试夹具指导（CONDITIONAL: 有测试框架 AND 复杂度 ≥ 中）**：有测试框架且复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
 
 ### Action: 调试（OPTIONAL / Bug 排查时 CONDITIONAL）
 

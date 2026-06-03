@@ -79,7 +79,7 @@ color: blue
 
 **环境检测（Action 开始时立即执行）：**
 1. **OpenSpec 检测**：运行 `ls openspec/` 或 `test -d openspec` 确认目录存在。如存在 → `openspec_initialized = true`；不存在 → `false`
-2. **测试框架检测**：运行 `ls jest.config.* vitest.config.* pytest.ini pyproject.toml 2>/dev/null` 检查测试配置。如存在 → `test_framework_detected = true`
+2. **测试框架检测**：运行 `ls jest.config.* vitest.config.* pytest.ini pyproject.toml 2>/dev/null; cat package.json 2>/dev/null | grep -q '"test"'` 检查测试配置。如存在 → `test_framework_detected = true`（用于测试夹具条件判断，TDD 本身始终为 MUST）
 3. **Worktree 检测**：运行 `git worktree list` 检查是否有活跃 worktree
 4. 将检测结果记入 state.json（创建时写入）
 
@@ -151,9 +151,11 @@ Phase 2 (DESIGN):
 
 Phase 3 (IMPLEMENT):
   代码实现: ✅ MUST（始终执行）
-  TDD 循环:
-    - 项目存在可运行的测试框架 → ✅
-    - 无测试框架 → ⬜ 跳过（但 Phase 4 必须做其他验证）
+  TDD 循环: ✅ MUST（始终执行，TDD 是强制开发规范）
+    - 如项目无测试框架，先初始化测试基础设施再开始 TDD
+  测试夹具:
+    - 有测试框架 AND 复杂度 ≥ 中 → ✅
+    - 其他 → ⬜ 跳过
   调试:
     - Bug 排查 → ✅ CONDITIONAL
     - 其他 → ⬜ OPTIONAL（遇到 bug 时触发）
@@ -507,7 +509,7 @@ Phase 4 (CLOSE):
 目标: 按计划或设计实现代码
 ```
 
-### Action 3.2: TDD 循环（CONDITIONAL: 项目存在可运行的测试框架）
+### Action 3.2: TDD 循环（MUST — 始终执行）
 
 ```
 ━━━ Phase 3 | Action: TDD 循环 ━━━
@@ -516,12 +518,9 @@ Phase 4 (CLOSE):
 目标: Red → Green → Refactor
 ```
 
-**触发检测：**
-- 检查项目是否存在 `jest.config.*` / `vitest.config.*` / `pytest.ini` 等测试配置
-- 存在 → 运行测试确认可执行 → 触发 TDD
-- 不存在 → 跳过 TDD，Phase 4 必须通过其他方式验证
+TDD 是强制开发规范，无论项目是否有测试框架都必须执行。如项目无测试框架，先初始化测试基础设施再开始 TDD。
 
-**测试夹具指导（CONDITIONAL: 复杂度 ≥ 中）**：复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
+**测试夹具指导（CONDITIONAL: 有测试框架 AND 复杂度 ≥ 中）**：有测试框架且复杂度 ≥ 中时，在 TDD 开始前先创建可复用的测试夹具（mock、stub、factory），确保测试隔离且不重复。简单任务不需要。
 
 ### Action 3.3: 调试（OPTIONAL / Bug 排查时 CONDITIONAL）
 
