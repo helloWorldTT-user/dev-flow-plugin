@@ -2,8 +2,34 @@
 
 Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Review + Feature-Dev 四个工具的优点。
 
+## v2.5 重大更新（流程鲁棒性升级）
+
+修复用户反复遇到的三个痛点：
+
+1. **流程不变量（FLOW-INVARIANT）** — 新增"消息分类协议"，无论用户如何操作（中途插入新需求、跑题提问、随意跳转），编排器都把用户保持在当前 Phase 边界内
+   - 每次收到用户消息先分类（Gate 选项 / 流程内追问 / 流程外消息 / 元指令）
+   - 流程外消息触发"强制兜底"：作为子任务 / 暂存 / 开新流程 三选一
+   - 启动强制路径：扫描 `.dev-flow/` 检查未完成流程，必须显式选择恢复或新建
+   - 移除无条件"跳到 Phase N"漏洞，跳转必须经过依赖校验
+
+2. **技能协同（OpenSpec × Superpowers）** — 两套工具的产物强制交叉引用，不再是独立路径
+   - `/opsx:ff` 生成的 design.md 必须引用 Superpowers design.md
+   - `/superpowers:writing-plans` 输入校验：必须同时包含 design.md + OpenSpec specs
+   - Phase 3 入口校验：检查交叉引用是否存在（向后兼容旧流程，警告不阻塞）
+   - Brainstorm 职责分离：Phase 1 聚焦需求，Phase 2 聚焦技术方案，可并存
+
+3. **收尾单一出口 Checklist** — Phase 4 重构为 10 步有序 Checklist，强制覆盖文档/提交/归档
+   - 新增 Action 4.5 文档同步：检查 README/docs/CLAUDE.md 是否需要更新
+   - 新增 Action 3.5 中间 git 提交：Phase 3 代码实现完成后固化状态
+   - 新增 Action 4.8 最终 git 提交：Phase 4 收尾后提交文档和归档变更
+   - 新增 Action 4.9 产物清单核对：11 项产物逐项打勾确认
+   - 归档失败回滚机制：检测状态不一致，禁止静默继续
+
 ## 功能特点
 
+- **流程不变量** — 消息分类协议 + 强制兜底，无论用户如何操作都不脱离流程边界（v2.5）
+- **技能协同** — OpenSpec specs 与 Superpowers design.md 强制交叉引用（v2.5）
+- **收尾 Checklist** — 10 步有序收尾，含文档同步、git 提交、产物清单核对（v2.5）
 - **Phase-Gate 架构** — 5 个 Phase（INTAKE → UNDERSTAND → DESIGN → IMPLEMENT → CLOSE），每个 Phase 有独立的质量门控
 - **动态 Action 组装** — 根据需求复杂度和意图自动组装 Action 清单，不固定步骤
 - **双重独立审查** — 设计审查（实现前）+ 代码审查（实现后），多维度并行 + 置信度过滤
@@ -13,7 +39,7 @@ Phase-Gate 动态开发流程编排器，整合 OpenSpec + Superpowers + Code-Re
 - **中断恢复** — 流程状态自动持久化到 `.dev-flow/<变更名>/state.json`，关机重启后可从断点继续，支持多变更并行
 - **环境自动检测** — Phase 0 通过 shell 命令实际检测 OpenSpec、测试框架、worktree，不靠 LLM 猜测
 - **运行时复杂度升级** — 执行中发现实际复杂度超预期时，主动提示用户升级流程
-- **产物传递校验** — Phase 3 开始前校验 Phase 2 设计产物完整性
+- **产物传递校验** — Phase 3 开始前校验 Phase 2 设计产物完整性 + 交叉引用（v2.5）
 - **规范漂移检测** — Phase 4 对比设计文档与实际代码，发现遗漏、范围蔓延、方案偏离
 - **脏工作树处理** — 恢复工作时检测未提交变更，确认归属后才能继续
 - **上下文压缩恢复** — state.json 包含 recovery_context 摘要，压缩后快速恢复理解
@@ -69,10 +95,11 @@ Phase 2: DESIGN（设计）
   产物生成 → 技术方案 → 执行计划 → 设计独立审查 → Gate 2
 
 Phase 3: IMPLEMENT（实现）
-  产物校验 → 代码实现 → TDD → 调试 → 代码独立审查 → Gate 3
+  产物校验 → 代码实现 → TDD → 调试 → 代码独立审查 → 中间 git 提交 → Gate 3
 
-Phase 4: CLOSE（收尾）
-  最终验证 → 漂移检测 → 一致性验证 → 分支收尾 → 归档 → Gate 4
+Phase 4: CLOSE（收尾 Checklist）
+  最终验证 → 阳性对照 → 漂移检测 → 一致性验证 → 文档同步
+  → 归档 → 最终 git 提交 → 分支收尾 → 产物清单核对 → Gate 4
 ```
 
 ## 流程步骤与 Skill 命令对照
@@ -100,20 +127,25 @@ Phase 2: DESIGN（设计）
   🔔 Gate 2: 用户确认设计通过
 
 Phase 3: IMPLEMENT（实现）
-  ⑪ 产物传递校验        — 检查设计文档/计划文档完整性      [自动执行]
+  ⑪ 产物传递校验        — 检查设计/计划文档完整性 + 交叉引用  [自动执行]
   ⑫ 代码实现           /superpowers:execute-plan        [MUST]
-  ⑬ TDD 循环           /superpowers:test-driven-development  [CONDITIONAL: 有测试框架]
+  ⑬ TDD 循环           /superpowers:test-driven-development  [MUST when 复杂度≥中, CONDITIONAL when 复杂度=低]
   ⑭ 调试               /superpowers:systematic-debugging     [OPTIONAL / Bug排查时CONDITIONAL]
   ⑮ 代码独立审查        — 3 并行 Agent（正确性/安全性/规范） [MUST]
+  ⑯ 中间 git 提交       — Phase 3 实现完成后固化代码状态    [MUST, v2.5]
   🔔 Gate 3a: 审查结果确认
   🔔 Gate 3: 用户确认实现通过
 
-Phase 4: CLOSE（收尾）
-  ⑯ 最终验证           /superpowers:verification-before-completion  [MUST]
-  ⑰ 规范漂移检测        — 对比设计文档 vs 实际代码          [有设计文档时执行]
-  ⑱ 一致性验证         /opsx:verify                     [CONDITIONAL: 使用了 OpenSpec 产物]
-  ⑲ 分支收尾           /superpowers:finishing-a-development-branch [CONDITIONAL: 有 worktree]
-  ⑳ 归档               /opsx:archive                    [CONDITIONAL: 使用了 OpenSpec 变更]
+Phase 4: CLOSE（收尾 Checklist）
+  ⑰ 最终验证           /superpowers:verification-before-completion  [MUST]
+  ⑱ 阳性对照检查        — 核心路径至少 1 个已知正确测试通过   [有测试时 MUST]
+  ⑲ 规范漂移检测        — 对比设计文档 vs 实际代码          [有设计文档时 MUST]
+  ⑳ 一致性验证         /opsx:verify                     [CONDITIONAL: 使用了 OpenSpec 产物]
+  ㉑ 文档同步          — README/docs/CLAUDE.md 按需更新   [MUST, v2.5]
+  ㉒ 归档               /opsx:archive + 失败回滚           [CONDITIONAL: 使用了 OpenSpec 变更]
+  ㉓ 最终 git 提交       — 提交文档和归档变更              [MUST, v2.5]
+  ㉔ 分支收尾           /superpowers:finishing-a-development-branch [CONDITIONAL: 有 worktree]
+  ㉕ 产物清单核对        — 11 项产物逐项打勾确认           [MUST, v2.5]
   🔔 Gate 4: 流程完成
 ```
 
